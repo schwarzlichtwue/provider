@@ -52,13 +52,12 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 				ssh_file = args.ssh_file,
 				update_interval = args.github_update_interval,
 				folder = args.github_folder)
-
+	cron.callback()
 	# twitter stays 'always on' because it actively listens on the stream
 	twitter = Twitter(user_id = twitter_user_id, consumer_key = twitter_consumer_key, consumer_secret =
 		twitter_consumer_secret, access_token = twitter_access_token,
 		access_secret = twitter_access_secret, db_file = args.db_file)
 
-	twitter.archive(20)
 	twitter.listen()
 
 	while True:
