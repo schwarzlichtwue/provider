@@ -3,11 +3,11 @@ import sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
 try:
 	from provider.push.git import Git
-	import provider.push.processor as processor
+	from provider.push.refine import Refine
 	import provider.push.filecreator as filecreator
 except ImportError:
 	from push.git import Git
-	import push.processor as processor
+	from push.refine import Refine
 	import push.filecreator as filecreator
 
 class Cron:
@@ -28,21 +28,8 @@ class Cron:
 
 	def callback(self):
 		conn = sqlite3.connect(self.db)
-		c = conn.cursor()
-		c.execute('SELECT tweet_id, text, user_id, created_at, reply_to_status, reply_to_user, quoted_status_id FROM tweets WHERE user_id = ? AND (reply_to_user IS NULL OR reply_to_user = ?);', (self.user_id, self.user_id))
-		rows = c.fetchall()
-		prepared_rows = []
-		for row in rows:
-			prepared_rows += [{
-			'tweet_id': row[0],
-			'text': row[1],
-			'user_id': row[2],
-			'created_at': row[3],
-			'reply_to_status': row[4],
-			'reply_to_user': row[5],
-			'quoted_status_id': row[6],
-			}]
-		obj_list = processor.process(self.user_id, conn, prepared_rows)
+		refine = Refine(self.user_id, conn)
+		obj_list = refine.refine()
 		conn.close()
 		git = Git(self.ssh_file, self.repo_folder)
 		git.checkout('dev')
