@@ -5,7 +5,8 @@ try:
 except ImportError:
 	import provider.twitter.user as user_processor
 
-def process_status(cursor, status):
+def process_status(conn, status):
+	cursor = conn.cursor()
 	print(status)
 
 	try:
@@ -38,13 +39,22 @@ def process_status(cursor, status):
 
 	try:
 		text = status.full_text
-		entities = status.entities
 	except AttributeError:
-		entities = status.extended_tweet['entities']
 		try:
 			text = status.extended_tweet['full_text']
 		except AttributeError:
-			text = status.text
+			try:
+				text = status.text
+			except AttributeError:
+				return
+
+	try:
+		entities = status.entities
+	except AttributeError:
+		try:
+			entities = status.extended_tweet['entities']
+		except AttributeError:
+			entities = {'hashtags': [], 'urls': [] }
 
 	hashtags = []
 	for entity in entities['hashtags']:
@@ -61,3 +71,4 @@ def process_status(cursor, status):
 	cursor.execute('INSERT OR IGNORE INTO tweets (tweet_id, text, user_id, created_at, reply_to_status, reply_to_user, quoted_status_id)  VALUES (?, ?, ?, ?, ?, ?, ?)', tweet_row)
 	cursor.executemany('INSERT OR IGNORE INTO tweet_tags (tag_name, tweet_id)  VALUES (?, ?)', hashtags)
 	cursor.executemany('INSERT OR IGNORE INTO tweet_urls (display_url, url, tweet_id)  VALUES (?, ?, ?)', urls)
+	conn.commit()

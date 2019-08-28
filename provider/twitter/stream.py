@@ -12,7 +12,5 @@ class StreamProcessor(tweepy.StreamListener):
 
 	def on_status(self, status):
 		conn = sqlite3.connect(self.db)
-		c = conn.cursor()
-		status_processor.process_status(c, status)
-		conn.commit()
+		status_processor.process_status(conn, status)
 		conn.close()
