@@ -54,9 +54,10 @@ PRIMARY KEY("tweet_id")
 PRIMARY KEY("user_id")
 );''')
 		c.execute('''CREATE TABLE IF NOT EXISTS "tweet_media" (
-"url" TEXT NOT NULL UNIQUE,
+"media_id" INTEGER NOT NULL UNIQUE,
 "tweet_id" INTEGER,
-"is_video" INTEGER
+"is_video" INTEGER,
+"data" BLOB
 );''')
 		c.execute('''CREATE TABLE IF NOT EXISTS "tweet_tags" (
 "tag_name" TEXT,
@@ -75,10 +76,8 @@ PRIMARY KEY("user_id")
 		archives past all tweets of the user
 		"""
 		conn = sqlite3.connect(self.db)
-		c = conn.cursor()
 		for status in limit_handled(tweepy.Cursor(self.api.user_timeline, user_id = self.user_id, tweet_mode='extended').items(num_tweets)):
-			status_processor.process_status(c, status)
-		conn.commit()
+			status_processor.process_status(conn, status)
 		conn.close()
 
 def limit_handled(cursor):

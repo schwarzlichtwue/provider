@@ -1,4 +1,5 @@
 from datetime import datetime
+import requests
 import sqlite3
 try:
 	import twitter.user as user_processor
@@ -48,27 +49,46 @@ def process_status(conn, status):
 			except AttributeError:
 				return
 
+	entities = {}
 	try:
 		entities = status.entities
 	except AttributeError:
 		try:
 			entities = status.extended_tweet['entities']
 		except AttributeError:
-			entities = {'hashtags': [], 'urls': [] }
+			pass
 
 	hashtags = []
-	for entity in entities['hashtags']:
-		hashtags += [(entity['text'], id)]
+	if 'hashtags' in entities:
+		for entity in entities['hashtags']:
+			hashtags += [(entity['text'], id)]
 	urls = []
-	for entity in entities['urls']:
-		urls += [(entity['display_url'], entity['expanded_url'], id)]
-		try:
-			text = text.replace(entity['url'], entity['display_url'])
-		except AttributeError:
-			pass
+	if 'urls' in entities:
+		for entity in entities['urls']:
+			urls += [(entity['display_url'], entity['expanded_url'], id)]
+			try:
+				text = text.replace(entity['url'], entity['display_url'])
+			except AttributeError:
+				pass
+
+	media = []
+	if 'media' in entities:
+		for entity in entities['media']:
+			url = ''
+			try:
+				url = entity['media_url_https']
+			except AttributeError:
+				url = entity['media_url']
+			image_blob = None
+			try:
+				image_blob = requests.request(url=url, method='get').content
+			except Exception:
+				continue
+			media += [(entity['id'], id, 0, image_blob)]
 
 	tweet_row = (id, text, user_id, iso_date, reply_to_status, reply_to_user, quoted_status_id)
 	cursor.execute('INSERT OR IGNORE INTO tweets (tweet_id, text, user_id, created_at, reply_to_status, reply_to_user, quoted_status_id)  VALUES (?, ?, ?, ?, ?, ?, ?)', tweet_row)
 	cursor.executemany('INSERT OR IGNORE INTO tweet_tags (tag_name, tweet_id)  VALUES (?, ?)', hashtags)
 	cursor.executemany('INSERT OR IGNORE INTO tweet_urls (display_url, url, tweet_id)  VALUES (?, ?, ?)', urls)
+	cursor.executemany('INSERT OR IGNORE INTO tweet_media (media_id, tweet_id, is_video, data)  VALUES (?, ?, ?, ?)', media)
 	conn.commit()
