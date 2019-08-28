@@ -35,3 +35,4 @@ class Cron:
 		git.pull()
 		for obj in obj_list:
 			filecreator.create(self.folder, obj)
+		git.update()
