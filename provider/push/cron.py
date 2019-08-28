@@ -16,8 +16,7 @@ class Cron:
 		self.user_id = user_id
 		self.db = db_file
 		self.ssh_file = ssh_file
-		self.repo_folder = folder
-		self.media_folder = os.path.join(folder, 'media')
+		self.folder = folder
 		scheduler = BackgroundScheduler()
 		try:
 			update_interval = int(update_interval)
@@ -31,15 +30,8 @@ class Cron:
 		refine = Refine(self.user_id, conn)
 		obj_list = refine.refine()
 		conn.close()
-		git = Git(self.ssh_file, self.repo_folder)
+		git = Git(self.ssh_file, self.folder)
 		git.checkout('dev')
 		git.pull()
 		for obj in obj_list:
-			filecreator.create(os.path.join(self.repo_folder, '_posts'), obj)
-			try:
-				if obj['media']:
-					# TODO
-					pass
-			except KeyError:
-				pass
-		git.update()
+			filecreator.create(self.folder, obj)

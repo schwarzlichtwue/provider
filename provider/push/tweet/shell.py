@@ -24,6 +24,29 @@ class Shell:
 
 		self.rendered = False
 
+	def media(self) -> list:
+		return self.__media_helper__([])
+
+	def __media_helper__(self, visited: list) -> list:
+		if self.id in visited:
+			return []
+		else:
+			visited += [self.id]
+		c = self.conn.cursor()
+		c.execute('SELECT DISTINCT media_id, is_video, data FROM tweet_media WHERE tweet_id = ?;', (self.id, ))
+		rows = c.fetchall()
+
+		media_ = []
+		for row in rows:
+			media_ += [{'id': row[0], 'is_video': row[1], 'data': row[2]}]
+
+		for tweet_shell in self.replied_by_statuses:
+			if tweet_shell.id == self.id:
+				media_ += tweet_shell.__media_helper__(visited)
+		if self.quoting and self.quoting.id == self.id:
+			media_ += self.quoting.__media_helper__(visited)
+		return media_
+
 	def categories(self) -> list:
 		return self.__categories_helper__([])
 
@@ -37,9 +60,9 @@ class Shell:
 			cats[i] = cats[i].replace(' ', '')
 
 		for tweet_shell in self.replied_by_statuses:
-			cats += tweet_shell.categories()
+			cats += tweet_shell.__categories_helper__(visited)
 		if self.quoting:
-			cats += self.quoting.categories()
+			cats += self.quoting.__categories_helper__(visited)
 		return list(set(cats))
 
 	def __url_cleaner__(self):
