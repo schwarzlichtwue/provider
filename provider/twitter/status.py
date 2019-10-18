@@ -51,12 +51,18 @@ def process_status(conn, status):
 
 	entities = {}
 	try:
-		entities = status.entities
+		entities = status.extended_entities
 	except AttributeError:
 		try:
-			entities = status.extended_tweet['entities']
+			entities = status.extended_tweet['extended_entities']
 		except AttributeError:
-			pass
+			try:
+				entities = status.entities
+			except AttributeError:
+				try:
+					entities = status.extended_tweet['entities']
+				except AttributeError:
+					pass
 
 	hashtags = []
 	if 'hashtags' in entities:

@@ -59,6 +59,6 @@ class Refine():
 			obj['text'] = tweet_shell.render_text()
 			media_ = tweet_shell.media()
 			if len(media_) > 0:
-				obj['media'] = tweet_shell.media()
+				obj['media'] = media_
 			obj_list += [obj]
 		return obj_list

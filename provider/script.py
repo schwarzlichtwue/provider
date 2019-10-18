@@ -57,10 +57,12 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 		twitter_consumer_secret, access_token = twitter_access_token,
 		access_secret = twitter_access_secret, db_file = args.db_file)
 
-	twitter.listen()
+#	twitter.listen()
+#	twitter.add_status_to_db(1182370756816179202)
+	twitter.archive(50)
 
 	while True:
-		cron.callback()
+	cron.callback()
 		input()
 
 main()

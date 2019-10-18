@@ -11,11 +11,13 @@ def create(folder, obj):
 		file_.write('categories: {}\n'.format(' '.join(sorted(obj['categories']))).lower())
 		file_.write('ref: \'{}\'\n'.format(obj['url']))
 		if 'media' in obj:
-			file_.write('media: ')
-			for media in obj['media']:
+			file_.write('media: [')
+			for i, media in enumerate(obj['media']):
 				media_path = __store_media__(folder, media)
-				file_.write('{} '.format(media_path))
-			file_.write('\n')
+				file_.write('\'{}\''.format(media_path))
+				if i+1 < len(obj['media']):
+					file_.write(', ')
+			file_.write(']\n')
 		file_.write('---\n')
 		file_.write(obj['text'])
 

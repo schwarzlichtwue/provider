@@ -41,9 +41,9 @@ class Shell:
 			media_ += [{'id': row[0], 'is_video': row[1], 'data': row[2]}]
 
 		for tweet_shell in self.replied_by_statuses:
-			if tweet_shell.id == self.id:
+			if tweet_shell.user_id == self.user_id:
 				media_ += tweet_shell.__media_helper__(visited)
-		if self.quoting and self.quoting.id == self.id:
+		if self.quoting and self.quoting.user_id == self.user_id:
 			media_ += self.quoting.__media_helper__(visited)
 		return media_
 
@@ -90,14 +90,19 @@ class Shell:
 		# replace * with \*
 		self.text = self.text.replace('*', '\\*')
 
+		# remove those ugly t.co/urls
+		p = re.compile('https:\/\/t.co\/[^\s]*')
+		for match in set(p.findall(self.text)):
+			self.text = self.text.replace(match, '')
+
 		# remove thread counters
-		p = re.compile('\d+/\d+')
+		p = re.compile('\[?\d+/\d+\]?')
 		for match in set(p.findall(self.text)):
 			self.text = self.text.replace(match, '')
 		self.text = self.text.replace('\n', '\n\n')
 
 	def __quote__(self):
-		quote = '> {} ([@{}](https://twitter.com/{})):  \n'.format(self.quoting.user_name, self.quoting.user_screen_name, self.quoting.user_screen_name)
+		quote = '> <b>{} ([@{}](https://twitter.com/{})):</b>  \n'.format(self.quoting.user_name, self.quoting.user_screen_name, self.quoting.user_screen_name)
 		lines = self.quoting.render_text().split('\n')
 		for line in lines:
 			quote += '>' + line + '  \n'

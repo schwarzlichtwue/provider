@@ -80,6 +80,15 @@ PRIMARY KEY("user_id")
 			status_processor.process_status(conn, status)
 		conn.close()
 
+	def add_status_to_db(self, status_id: int):
+		"""
+		Adds the status identified by status_id to the database
+		"""
+		conn = sqlite3.connect(self.db)
+		status = self.api.get_status(status_id, tweet_mode='extended')
+		status_processor.process_status(conn, status)
+		conn.close()
+
 def limit_handled(cursor):
 	try:
 		while True:
