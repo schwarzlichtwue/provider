@@ -15,6 +15,8 @@ class Twitter:
 	def __init__(self, user_id:str, consumer_key: str, consumer_secret: str, access_token: str,
 		     access_secret: str, db_file: str):
 		self.db = db_file
+		self.conn = None
+		self.open_connection()
 		self.user_id = user_id
 		self.prepare_db()
 
@@ -24,7 +26,7 @@ class Twitter:
 
 	def listen(self):
 		streamProcessor = StreamProcessor()
-		streamProcessor.prepare(self.db)
+		streamProcessor.prepare(self.conn)
 		stream = tweepy.Stream(auth = self.api.auth, listener=streamProcessor, tweet_mode='extended')
 		stream.filter(follow=[self.user_id], is_async=True)
 
@@ -32,8 +34,7 @@ class Twitter:
 		"""
 		prepare the database by creating all required tables if they do not exist
 		"""
-		conn = sqlite3.connect(self.db)
-		c = conn.cursor()
+		c = self.conn.cursor()
 		c.execute('''CREATE TABLE IF NOT EXISTS "tweets" (
 "tweet_id" INTEGER UNIQUE,
 "text" TEXT,
@@ -68,26 +69,28 @@ PRIMARY KEY("user_id")
 "url" TEXT,
 "tweet_id" INTEGER
 );''')
-		conn.commit()
-		conn.close()
+		self.conn.commit()
 
 	def archive(self, num_tweets: int):
 		"""
 		archives past all tweets of the user
 		"""
-		conn = sqlite3.connect(self.db)
 		for status in limit_handled(tweepy.Cursor(self.api.user_timeline, user_id = self.user_id, tweet_mode='extended').items(num_tweets)):
-			status_processor.process_status(conn, status)
-		conn.close()
+			status_processor.process_status(self.conn, status)
 
 	def add_status_to_db(self, status_id: int):
 		"""
 		Adds the status identified by status_id to the database
 		"""
-		conn = sqlite3.connect(self.db)
 		status = self.api.get_status(status_id, tweet_mode='extended')
-		status_processor.process_status(conn, status)
-		conn.close()
+		status_processor.process_status(self.conn, status)
+	
+	def open_connection(self):
+		self.conn = sqlite3.connect(self.db)
+
+	def close_connection(self):
+		self.conn.commit()
+		self.conn.close()
 
 def limit_handled(cursor):
 	try:

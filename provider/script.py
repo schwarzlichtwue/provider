@@ -61,8 +61,12 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 #	twitter.add_status_to_db(1186662980643119104)
 #	twitter.archive(750)
 
-	while True:
-		cron.callback()
-		input()
+	try:
+		while True:
+			cron.callback()
+			input()
+	except (EOFError,  KeyboardInterrupt):
+		print('Received signal to stop')
+		twitter.close_connection()
 
 main()

@@ -7,10 +7,8 @@ except ImportError:
 	import provider.twitter.status as status_processor
 
 class StreamProcessor(tweepy.StreamListener):
-	def prepare(self, db_file: str):
-		self.db = db_file
+	def prepare(self, conn):
+		self.conn = conn
 
 	def on_status(self, status):
-		conn = sqlite3.connect(self.db)
-		status_processor.process_status(conn, status)
-		conn.close()
+		status_processor.process_status(self.conn, status)
