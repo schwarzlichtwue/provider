@@ -20,14 +20,17 @@ class Cron:
 		self.db = db_file
 		self.ssh_file = ssh_file
 		self.folder = folder
-		scheduler = BackgroundScheduler()
+		self.scheduler = BackgroundScheduler()
 		try:
 			update_interval = int(update_interval)
 		except ValueError:
 			update_interval = 2 # (default)
 		logging.info("Starting background update job with interval {}h".format(update_interval))
-		scheduler.add_job(self.callback, 'interval', hours=update_interval, replace_existing=True)
-		scheduler.start()
+		self.scheduler.add_job(self.callback, 'interval', hours=update_interval, replace_existing=True)
+		self.scheduler.start()
+
+	def stop(self):
+		self.scheduler.shutdown()
 
 	def callback(self):
 		logging.info("Update started")

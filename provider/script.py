@@ -9,6 +9,7 @@ except ImportError:
 	#import facebook.facebook as facebook
 	from push.cron import Cron
 import sys
+import signal
 import argparse
 import decouple
 import logging
@@ -64,14 +65,18 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 #	twitter.add_status_to_db(1186662980643119104)
 #	twitter.archive(750)
 
+	def update_handler(signum, frame):
+		logging.info("Manual Push started")
+		cron.callback()
+	signal.signal(signal.SIGUSR1, update_handler)
+	logging.info("Update-Handler for SIGUSR1 registered")
+
 	try:
 		while True:
-			print("Press Enter for manual push")
 			input()
-			logging.info("Manual Push started")
-			cron.callback()
-	except (EOFError,  KeyboardInterrupt):
-		logging.warning("Caught exit signal. Stopping")
-		twitter.close_connection()
+	except KeyboardInterrupt:
+		logging.warning("Caught SIGINT signal. Stopping")
+		twitter.stop()
+		cron.stop()
 
 main()

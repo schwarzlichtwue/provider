@@ -17,7 +17,7 @@ class Twitter:
 		     access_secret: str, db_file: str):
 		self.db = db_file
 		self.conn = None
-		self.open_connection()
+		self.__open_connection__()
 		self.user_id = user_id
 		self.prepare_db()
 
@@ -25,12 +25,18 @@ class Twitter:
 		auth.set_access_token(access_token, access_secret)
 		self.api = tweepy.API(auth)
 
+		self.stream = None
+
 	def listen(self):
 		logging.info("Listening on twitter stream")
 		streamProcessor = StreamProcessor()
 		streamProcessor.prepare(self.conn)
-		stream = tweepy.Stream(auth = self.api.auth, listener=streamProcessor, tweet_mode='extended')
-		stream.filter(follow=[self.user_id], is_async=True)
+		self.stream = tweepy.Stream(auth = self.api.auth, listener=streamProcessor, tweet_mode='extended')
+		self.stream.filter(follow=[self.user_id], is_async=True)
+	
+	def stop(self):
+		self.stream.disconnect()
+		self.__close_connection__()
 
 	def prepare_db(self):
 		"""
@@ -90,14 +96,15 @@ PRIMARY KEY("user_id")
 		status = self.api.get_status(status_id, tweet_mode='extended')
 		status_processor.process_status(self.conn, status)
 	
-	def open_connection(self):
+	def __open_connection__(self):
 		logging.info("Connecting to database {}".format(self.db))
 		self.conn = sqlite3.connect(self.db)
 
-	def close_connection(self):
+	def __close_connection__(self):
 		logging.info("Closing connection to database {}".format(self.db))
 		self.conn.commit()
 		self.conn.close()
+		logging.info("Connection to database {} closed".format(self.db))
 
 def limit_handled(cursor):
 	try:
