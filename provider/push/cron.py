@@ -1,6 +1,9 @@
 import os
 import sqlite3
+import logging
+
 from apscheduler.schedulers.background import BackgroundScheduler
+
 try:
 	from provider.push.git import Git
 	from provider.push.refine import Refine
@@ -22,17 +25,20 @@ class Cron:
 			update_interval = int(update_interval)
 		except ValueError:
 			update_interval = 2 # (default)
+		logging.info("Starting background update job with interval {}h".format(update_interval))
 		scheduler.add_job(self.callback, 'interval', hours=update_interval, replace_existing=True)
 		scheduler.start()
 
 	def callback(self):
+		logging.info("Update started")
 		conn = sqlite3.connect(self.db)
 		refine = Refine(self.user_id, conn)
 		obj_list = refine.refine()
 		conn.close()
-		git = Git(self.ssh_file, self.folder)
+		git = Git(self.folder, self.ssh_file)
 		git.checkout('dev')
 		git.pull()
 		for obj in obj_list:
 			filecreator.create(self.folder, obj)
 		git.update()
+		logging.info("Update finished")

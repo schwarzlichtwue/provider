@@ -2,6 +2,7 @@ from datetime import datetime
 import time
 import tweepy
 import sqlite3
+import logging
 
 try:
 	from twitter.stream import StreamProcessor
@@ -25,6 +26,7 @@ class Twitter:
 		self.api = tweepy.API(auth)
 
 	def listen(self):
+		logging.info("Listening on twitter stream")
 		streamProcessor = StreamProcessor()
 		streamProcessor.prepare(self.conn)
 		stream = tweepy.Stream(auth = self.api.auth, listener=streamProcessor, tweet_mode='extended')
@@ -69,12 +71,14 @@ PRIMARY KEY("user_id")
 "url" TEXT,
 "tweet_id" INTEGER
 );''')
+		logging.info("Committing CREATE TABLE queries")
 		self.conn.commit()
 
 	def archive(self, num_tweets: int):
 		"""
 		archives past all tweets of the user
 		"""
+		logging.info("Archiving {} tweets".format(num_tweets))
 		for status in limit_handled(tweepy.Cursor(self.api.user_timeline, user_id = self.user_id, tweet_mode='extended').items(num_tweets)):
 			status_processor.process_status(self.conn, status)
 
@@ -82,13 +86,16 @@ PRIMARY KEY("user_id")
 		"""
 		Adds the status identified by status_id to the database
 		"""
+		logging.info("Processing status {}".format(status_id))
 		status = self.api.get_status(status_id, tweet_mode='extended')
 		status_processor.process_status(self.conn, status)
 	
 	def open_connection(self):
+		logging.info("Connecting to database {}".format(self.db))
 		self.conn = sqlite3.connect(self.db)
 
 	def close_connection(self):
+		logging.info("Closing connection to database {}".format(self.db))
 		self.conn.commit()
 		self.conn.close()
 
@@ -98,6 +105,8 @@ def limit_handled(cursor):
 			try:
 				yield cursor.next()
 			except tweepy.RateLimitError:
-				time.sleep(15*60)
+				timeout = 15*60
+				logging.warning("Reached twitter api rate limit. Waiting {} seconds".format(timeout))
+				time.sleep(timeout)
 	except StopIteration:
 		return

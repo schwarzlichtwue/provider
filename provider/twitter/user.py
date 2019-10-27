@@ -1,7 +1,9 @@
 import sqlite3
 import urllib.request
+import logging
 
 def process_user(cursor, user):
+	logging.info("Adding user @{}".format(user.name))
 	id = user.id
 	name = user.name
 	screen_name = user.screen_name

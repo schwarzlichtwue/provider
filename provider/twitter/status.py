@@ -1,12 +1,14 @@
 from datetime import datetime
 import requests
 import sqlite3
+import logging
 try:
 	import twitter.user as user_processor
 except ImportError:
 	import provider.twitter.user as user_processor
 
 def process_status(conn, status):
+	logging.info("Processing status {}".format(status.id))
 	cursor = conn.cursor()
 	print(status)
 
@@ -15,9 +17,9 @@ def process_status(conn, status):
 	except Exception:
 		pass
 
-	id              = status.id
-	reply_to_status = status.in_reply_to_status_id
-	reply_to_user   = status.in_reply_to_user_id
+	status_id        = status.id
+	reply_to_status  = status.in_reply_to_status_id
+	reply_to_user    = status.in_reply_to_user_id
 	quoted_status_id = None
 	if status.is_quote_status:
 		quoted_status_id = status.quoted_status_id
@@ -67,11 +69,12 @@ def process_status(conn, status):
 	hashtags = []
 	if 'hashtags' in entities:
 		for entity in entities['hashtags']:
-			hashtags += [(entity['text'], id)]
+			hashtags += [(entity['text'], status_id)]
 	urls = []
 	if 'urls' in entities:
 		for entity in entities['urls']:
-			urls += [(entity['display_url'], entity['expanded_url'], id)]
+			urls += [(entity['display_url'],
+			    entity['expanded_url'], status_id)]
 			try:
 				text = text.replace(entity['url'], entity['display_url'])
 			except AttributeError:
@@ -90,9 +93,9 @@ def process_status(conn, status):
 				image_blob = requests.request(url=url, method='get').content
 			except Exception:
 				continue
-			media += [(entity['id'], id, 0, image_blob)]
+			media += [(entity['id'], status_id, 0, image_blob)]
 
-	tweet_row = (id, text, user_id, iso_date, reply_to_status, reply_to_user, quoted_status_id)
+	tweet_row = (status_id, text, user_id, iso_date, reply_to_status, reply_to_user, quoted_status_id)
 	cursor.execute('INSERT OR IGNORE INTO tweets (tweet_id, text, user_id, created_at, reply_to_status, reply_to_user, quoted_status_id)  VALUES (?, ?, ?, ?, ?, ?, ?)', tweet_row)
 	cursor.executemany('INSERT OR IGNORE INTO tweet_tags (tag_name, tweet_id)  VALUES (?, ?)', hashtags)
 	cursor.executemany('INSERT OR IGNORE INTO tweet_urls (display_url, url, tweet_id)  VALUES (?, ?, ?)', urls)

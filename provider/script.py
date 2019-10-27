@@ -11,8 +11,11 @@ except ImportError:
 import sys
 import argparse
 import decouple
+import logging
 
 def main():
+	logging.basicConfig(level=logging.INFO)
+	logging.info("Content Provider initiated")
 	parser = argparse.ArgumentParser(description="Process new facebook-posts and tweets")
 	parser.add_argument('-e', '--env', dest='env_file', type=str,
 						help="the location env variables are stored in")
@@ -26,14 +29,14 @@ def main():
 						help="The path of the github repository the changes are to be committed to")
 	args = parser.parse_args()
 	if not args.env_file:
-		print("No .env file specified")
+		logging.error("No .env file specified")
 		return 1
 	if not args.db_file:
-		print("No database file specified")
+		logging.error("No database file specified")
 		return 1
 	if not args.ssh_file:
-		print("No ssh key file specified")
-		return 1
+		logging.warning("No ssh key file specified. Changes will not be pushed")
+
 	config = decouple.Config(decouple.RepositoryEnv(args.env_file))
 	try:
 		twitter_consumer_key    = config.get('TWITTER_CONSUMER_KEY')
@@ -63,10 +66,12 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 
 	try:
 		while True:
-			cron.callback()
+			print("Press Enter for manual push")
 			input()
+			logging.info("Manual Push started")
+			cron.callback()
 	except (EOFError,  KeyboardInterrupt):
-		print('Received signal to stop')
+		logging.warning("Caught exit signal. Stopping")
 		twitter.close_connection()
 
 main()
