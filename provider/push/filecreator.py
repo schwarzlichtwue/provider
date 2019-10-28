@@ -2,8 +2,7 @@ import os
 from datetime import datetime
 
 def create(folder, obj):
-    filename = str(datetime.fromisoformat(obj['date']).date()) + '-'
-        + str(obj['tweet_id']) + '.md'
+    filename = str(datetime.fromisoformat(obj['date']).date()) + '-' + str(obj['tweet_id']) + '.md'
     path = os.path.join(folder, '_posts', filename)
     with open(path, 'w') as file_:
         file_.write('---\n')
