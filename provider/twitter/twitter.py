@@ -37,7 +37,8 @@ class Twitter:
         self.stream.filter(follow=[self.user_id], is_async=True)
 
     def stop(self):
-        self.stream.disconnect()
+        if self.stream:
+            self.stream.disconnect()
         self.__close_connection__()
 
     def prepare_db(self):
