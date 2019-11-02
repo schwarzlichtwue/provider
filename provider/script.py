@@ -51,11 +51,11 @@ TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET,
 TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         return 1
 
-#    cron = Cron(user_id = twitter_user_id,
-#        db_file = args.db_file,
-#        ssh_file = args.ssh_file,
-#        update_interval = args.github_update_interval,
-#        folder = args.github_folder)
+    cron = Cron(user_id = twitter_user_id,
+        db_file = args.db_file,
+        ssh_file = args.ssh_file,
+        update_interval = args.github_update_interval,
+        folder = args.github_folder)
 
     twitter = Twitter(user_id = twitter_user_id,
         consumer_key = twitter_consumer_key,
@@ -66,11 +66,11 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 
     twitter.listen()
 #    twitter.add_status_to_db(1186662980643119104)
-    twitter.archive(40)
+#    twitter.archive(40)
 
     def update_handler(signum, frame):
         logging.info("Manual Push started")
-#        cron.callback()
+        cron.callback()
     signal.signal(signal.SIGUSR1, update_handler)
     logging.info("Update-Handler for SIGUSR1 registered")
 
@@ -80,6 +80,6 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
     except KeyboardInterrupt:
         logging.warning("Caught SIGINT signal. Stopping")
         twitter.stop()
-#        cron.stop()
+        cron.stop()
 
 main()
