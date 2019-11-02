@@ -16,10 +16,10 @@ class Twitter:
     def __init__(self, user_id:str, consumer_key: str, consumer_secret:
             str, access_token: str, access_secret: str, db_file: str):
         self.db = db_file
-        self.conn = None
-        self.__open_connection__()
+        self.conn = sqlite3.connect(self.db)
         self.user_id = user_id
         self.prepare_db()
+        self.processor = status_processor.StatusProcessor(self.db)
 
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_secret)
@@ -30,16 +30,20 @@ class Twitter:
     def listen(self):
         logging.info("Listening on twitter stream")
         streamProcessor = StreamProcessor()
-        streamProcessor.prepare(self.conn)
+        streamProcessor.prepare(self.db)
         self.stream = tweepy.Stream(auth = self.api.auth,
-            listener=streamProcessor,
+            listener= streamProcessor,
             tweet_mode='extended')
         self.stream.filter(follow=[self.user_id], is_async=True)
 
     def stop(self):
         if self.stream:
             self.stream.disconnect()
-        self.__close_connection__()
+        logging.info("Closing connection to database {}".format(self.db))
+        self.conn.commit()
+        self.conn.close()
+        logging.info("Connection to database {} closed".format(self.db))
+
 
     def prepare_db(self):
         """
@@ -85,11 +89,11 @@ PRIMARY KEY("user_id")
 
     def archive(self, num_tweets: int):
         """
-        archives past all tweets of the user
+        Archives past num_tweets tweets of the user
         """
         logging.info("Archiving {} tweets".format(num_tweets))
         for status in limit_handled(tweepy.Cursor(self.api.user_timeline, user_id = self.user_id, tweet_mode='extended').items(num_tweets)):
-            status_processor.process_status(self.conn, status)
+            self.processor.process_status(status)
 
     def add_status_to_db(self, status_id: int):
         """
@@ -97,19 +101,12 @@ PRIMARY KEY("user_id")
         """
         logging.info("Processing status {}".format(status_id))
         status = self.api.get_status(status_id, tweet_mode='extended')
-        status_processor.process_status(self.conn, status)
-
-    def __open_connection__(self):
-        logging.info("Connecting to database {}".format(self.db))
-        self.conn = sqlite3.connect(self.db)
-
-    def __close_connection__(self):
-        logging.info("Closing connection to database {}".format(self.db))
-        self.conn.commit()
-        self.conn.close()
-        logging.info("Connection to database {} closed".format(self.db))
+        self.processor.process_status(status)
 
 def limit_handled(cursor):
+    """
+    Function for handling the twitter api time limits
+    """
     try:
         while True:
             try:

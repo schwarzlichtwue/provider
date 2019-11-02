@@ -8,9 +8,12 @@ except ImportError:
     import provider.twitter.status as status_processor
 
 class StreamProcessor(tweepy.StreamListener):
-    def prepare(self, conn):
-        self.conn = conn
+    db = None
+
+    def prepare(self, db):
+        self.db = db
 
     def on_status(self, status):
         logging.info("Stream retrieved status")
-        status_processor.process_status(self.conn, status)
+        processor = status_processor.StatusProcessor(self.db)
+        processor.process_status(status)
