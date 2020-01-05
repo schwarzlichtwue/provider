@@ -9,6 +9,7 @@ except ImportError:
     #import facebook.facebook as facebook
     from push.cron import Cron
 import sys
+import time
 import signal
 import argparse
 import decouple
@@ -76,7 +77,7 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 
     try:
         while True:
-            input()
+            time.sleep(10)
     except KeyboardInterrupt:
         logging.warning("Caught SIGINT signal. Stopping")
         twitter.stop()
