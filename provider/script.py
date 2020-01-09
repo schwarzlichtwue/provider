@@ -75,8 +75,7 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         access_secret         = twitter_access_secret,
         db_file               = args.db_file)
 
-    cron.callback()
-#    twitter.listen()
+    twitter.listen()
 #    twitter.add_status_to_db(1186662980643119104)
 #    twitter.archive(40)
 
