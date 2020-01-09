@@ -6,21 +6,26 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 try:
     from provider.push.git import Git
+    from provider.push.jekyll import Jekyll
     from provider.push.refine import Refine
     import provider.push.filecreator as filecreator
 except ImportError:
     from push.git import Git
+    from push.jekyll import Jekyll
     from push.refine import Refine
     import push.filecreator as filecreator
 
 class Cron:
 
     def __init__(self, user_id: int, db_file: str, ssh_file: str,
-        update_interval: int, folder: str):
+            update_interval: int, jekyll_source: str, jekyll_target: str):
         self.user_id = user_id
         self.db = db_file
         self.ssh_file = ssh_file
-        self.folder = folder
+        self.jekyll_source = jekyll_source
+        self.jekyll_target = jekyll_target
+
+        self.jekyll = Jekyll(self.jekyll_source, self.jekyll_target)
         self.scheduler = BackgroundScheduler()
         try:
             update_interval = int(update_interval)
@@ -36,13 +41,26 @@ class Cron:
     def callback(self):
         logging.info("Update started")
         conn = sqlite3.connect(self.db)
+
         refine = Refine(self.user_id, conn)
         obj_list = refine.refine()
+
         conn.close()
-        git = Git(self.folder, self.ssh_file)
-        git.checkout('dev')
-        git.pull()
+
+        source_git = Git(self.jekyll_source, self.ssh_file)
+        source_git.checkout('dev')
+        source_git.pull()
+
+        target_git = Git(self.jekyll_target, self.ssh_file)
+        target_git.checkout('master')
+        target_git.pull()
+
         for obj in obj_list:
-            filecreator.create(self.folder, obj)
-        git.update()
+            filecreator.create(self.jekyll_source, obj)
+
+        source_git.push("new blog posts")
+
+        self.jekyll.build()
+        target_git.push("new tweets")
+
         logging.info("Update finished")

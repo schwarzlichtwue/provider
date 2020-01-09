@@ -27,8 +27,10 @@ def main():
                         help="The ssh key-file to use for pushing to github (needs to allow no passphrase)")
     parser.add_argument('-u', '--update-interval', dest='github_update_interval', type=int,
                         help="The interval (h) in which changes are to be pushed via github")
-    parser.add_argument('-g', '--github-repository', dest='github_folder', type=str,
-                        help="The path of the github repository the changes are to be committed to")
+    parser.add_argument('--jekyll-source', dest='jekyll_source', type=str,
+                        help="The path of the github repository the source changes are to be committed to")
+    parser.add_argument('--jekyll-target', dest='jekyll_target', type=str,
+                        help="The path of the github repository the target changes are to be committed to")
     args = parser.parse_args()
     if not args.env_file:
         logging.error("No .env file specified")
@@ -38,6 +40,12 @@ def main():
         return 1
     if not args.ssh_file:
         logging.warning("No ssh key file specified. Changes will not be pushed")
+    else:
+        if not args.jekyll_source:
+            logging.error("Missing jekyll source folder")
+        if not args.jekyll_target:
+            logging.error("Missing jekyll target folder")
+
 
     config = decouple.Config(decouple.RepositoryEnv(args.env_file))
     try:
@@ -53,19 +61,22 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         return 1
 
     cron = Cron(user_id = twitter_user_id,
-        db_file = args.db_file,
-        ssh_file = args.ssh_file,
+        db_file         = args.db_file,
+        ssh_file        = args.ssh_file,
         update_interval = args.github_update_interval,
-        folder = args.github_folder)
+        jekyll_source   = args.jekyll_source,
+        jekyll_target   = args.jekyll_target
+        )
 
     twitter = Twitter(user_id = twitter_user_id,
-        consumer_key = twitter_consumer_key,
-        consumer_secret = twitter_consumer_secret,
-        access_token = twitter_access_token,
-        access_secret = twitter_access_secret,
-        db_file = args.db_file)
+        consumer_key          = twitter_consumer_key,
+        consumer_secret       = twitter_consumer_secret,
+        access_token          = twitter_access_token,
+        access_secret         = twitter_access_secret,
+        db_file               = args.db_file)
 
-    twitter.listen()
+    cron.callback()
+#    twitter.listen()
 #    twitter.add_status_to_db(1186662980643119104)
 #    twitter.archive(40)
 

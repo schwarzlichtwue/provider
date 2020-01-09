@@ -7,7 +7,7 @@ class Git(object):
     def __init__(self, folder: str, ssh_file: str = None):
         self.folder = folder
         self.ssh_file = ssh_file
-        self.can_push = ssh_file is not None
+        self.can_push = ssh_file is not None and folder is not None
 
     def checkout(self, branch: str):
         logging.info("Checking out branch {}".format(branch))
