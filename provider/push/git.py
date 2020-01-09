@@ -30,21 +30,3 @@ class Git(object):
             logging.info("Pushing in {}".format(self.folder))
             cmd = ['git', '-C', self.folder, 'push']
             subprocess.run(cmd)
-
-    def update(self):
-        self.checkout('dev')
-        self.pull()
-
-        logging.info("Performing jekyll build of {}".format(self.folder))
-        cmd = ['cd {} && jekyll build -d /tmp/_site'.format(self.folder)]
-        subprocess.run(cmd, shell=True)
-
-        self.push('new tweets')
-
-        self.checkout('master')
-        self.pull()
-
-        cmd = ['cp -r /tmp/_site/* {} && rm -rf /tmp/_site'.format(self.folder)]
-        subprocess.run(cmd, shell=True)
-
-        self.push('new tweets')

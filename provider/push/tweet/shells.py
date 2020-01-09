@@ -16,7 +16,7 @@ class ShellTree(dict):
                     reply_status.replied_by_statuses += [shell_obj]
 
 
-    def filter_by_id(self, user_id):
+    def filter_by_id(self, user_id: str):
         return ShellTree(
             {k: v for k, v in self.items() if str(v.user_id) == user_id }
         )
@@ -25,4 +25,9 @@ class ShellTree(dict):
     def filter_for_roots(self):
         return ShellTree(
             {k: v for k, v in self.items() if v.reply_to_status is None }
+        )
+
+    def filter_by_min_tweet_id(self, min_tweet_id: int):
+        return ShellTree(
+            {k: v for k, v in self.items() if v.id > min_tweet_id }
         )

@@ -45,8 +45,10 @@ class Shell:
         for tweet_shell in self.replied_by_statuses:
             if tweet_shell.user_id == self.user_id:
                 media_ += tweet_shell.__media_helper__(visited)
-        if self.quoting and self.quoting.user_id == self.user_id:
-            media_ += self.quoting.__media_helper__(visited)
+## The following is uncommented to NOT have previously posted media show up
+## in quote-tweets
+#        if self.quoting and self.quoting.user_id == self.user_id:
+#            media_ += self.quoting.__media_helper__(visited)
         return media_
 
     def categories(self) -> list:
