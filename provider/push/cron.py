@@ -27,6 +27,8 @@ class Cron:
 
         self.jekyll = Jekyll(self.jekyll_source, self.jekyll_target)
         self.scheduler = BackgroundScheduler()
+
+        self.min_tweet_id = 0
         try:
             update_interval = int(update_interval)
         except ValueError:
@@ -39,11 +41,11 @@ class Cron:
         self.scheduler.shutdown()
 
     def callback(self):
-        logging.info("Update started")
+        logging.info("Update started. Adding tweets with id > {}".format(self.min_tweet_id))
         conn = sqlite3.connect(self.db)
 
         refine = Refine(self.user_id, conn)
-        obj_list = refine.refine()
+        obj_list = refine.refine(self.min_tweet_id)
 
         conn.close()
 
@@ -57,10 +59,11 @@ class Cron:
 
         for obj in obj_list:
             filecreator.create(self.jekyll_source, obj)
+            self.min_tweet_id = max(self.min_tweet_id, int(obj['tweet_id']))
 
         source_git.push("new blog posts")
 
         self.jekyll.build()
         target_git.push("new tweets")
 
-        logging.info("Update finished")
+        logging.info("Update finished. Added tweets with id < {}".format(self.min_tweet_id))
