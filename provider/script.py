@@ -91,6 +91,7 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
             time.sleep(10)
     except KeyboardInterrupt:
         logging.warning("Caught SIGINT signal. Stopping")
+    finally:
         twitter.stop()
         cron.stop()
 

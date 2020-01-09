@@ -28,10 +28,12 @@ class Cron:
         self.jekyll = Jekyll(self.jekyll_source, self.jekyll_target)
         self.scheduler = BackgroundScheduler()
 
-        self.min_tweet_id = 0
+        self.min_tweet_id = 0 # keep at 0 to have ALL tweets processed on startup
+        self.calling = False
         try:
             update_interval = int(update_interval)
         except ValueError:
+            logging.warning("Update interval is not an integer. Using default value.")
             update_interval = 2 # (default)
         logging.info("Starting background update job with interval {}h".format(update_interval))
         self.scheduler.add_job(self.callback, 'interval', hours=update_interval, replace_existing=True)
@@ -41,29 +43,37 @@ class Cron:
         self.scheduler.shutdown()
 
     def callback(self):
-        logging.info("Update started. Adding tweets with id > {}".format(self.min_tweet_id))
-        conn = sqlite3.connect(self.db)
+        if self.calling:
+            logging.warning("""Update-Callback was executed while another \
+callback is still running. Aborting""")
+            return
+        self.calling = True
+        try:
+            logging.info("Update started. Adding tweets with id > {}".format(self.min_tweet_id))
+            conn = sqlite3.connect(self.db)
 
-        refine = Refine(self.user_id, conn)
-        obj_list = refine.refine(self.min_tweet_id)
+            refine = Refine(self.user_id, conn)
+            obj_list = refine.refine(self.min_tweet_id)
 
-        conn.close()
+            conn.close()
 
-        source_git = Git(self.jekyll_source, self.ssh_file)
-        source_git.checkout('dev')
-        source_git.pull()
+            source_git = Git(self.jekyll_source, self.ssh_file)
+            source_git.checkout('dev')
+            source_git.pull()
 
-        target_git = Git(self.jekyll_target, self.ssh_file)
-        target_git.checkout('master')
-        target_git.pull()
+            target_git = Git(self.jekyll_target, self.ssh_file)
+            target_git.checkout('master')
+            target_git.pull()
 
-        for obj in obj_list:
-            filecreator.create(self.jekyll_source, obj)
-            self.min_tweet_id = max(self.min_tweet_id, int(obj['tweet_id']))
+            for obj in obj_list:
+                filecreator.create(self.jekyll_source, obj)
+                self.min_tweet_id = max(self.min_tweet_id, int(obj['tweet_id']))
 
-        source_git.push("new blog posts")
+            source_git.push("new blog posts")
 
-        self.jekyll.build()
-        target_git.push("new tweets")
+            self.jekyll.build()
+            target_git.push("new tweets")
 
-        logging.info("Update finished. Added tweets with id < {}".format(self.min_tweet_id))
+            logging.info("Update finished. Added tweets with id < {}".format(self.min_tweet_id))
+        finally:
+            self.calling = False

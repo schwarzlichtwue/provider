@@ -13,6 +13,8 @@ def process_user(cursor, user):
     try:
         datetime_ = user.created_at
     except AttributeError:
+        logging.warning("""No information about the user {}'s creation date. \
+Using system time""".format(user.screen_name))
         datetime_  = datetime.now()
     iso_date = datetime_.strftime('%Y-%m-%d %H:%M:%S')
     user_row = (id, name, screen_name, sqlite3.Binary(image_data), iso_date, description)
