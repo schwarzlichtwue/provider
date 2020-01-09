@@ -35,45 +35,45 @@ class StatusProcessor():
             quoted_status_id = status.quoted_status_id
             try:
                 self.process_status(status.quoted_status)
-            except AttributeError:
+            except (KeyError, AttributeError):
                 pass
         datetime_ = None
         try:
             datetime_ = status.created_at
-        except AttributeError:
+        except (KeyError, AttributeError):
             datetime_  = datetime.now()
         iso_date = datetime_.strftime('%Y-%m-%d %H:%M:%S')
 
         user_id = None
         try:
             user_id = status.author.id
-        except AttributeError:
+        except (KeyError, AttributeError):
             pass
 
         try:
             text = status.full_text
-        except AttributeError:
+        except (KeyError, AttributeError):
             try:
                 text = status.extended_tweet['full_text']
-            except AttributeError:
+            except (KeyError, AttributeError):
                 try:
                     text = status.text
-                except AttributeError:
+                except (KeyError, AttributeError):
                     return
 
         entities = {}
         try:
             entities = status.extended_entities
-        except AttributeError:
+        except (KeyError, AttributeError):
             try:
                 entities = status.extended_tweet['extended_entities']
-            except AttributeError:
+            except (KeyError, AttributeError):
                 try:
                     entities = status.entities
-                except AttributeError:
+                except (KeyError, AttributeError):
                     try:
                         entities = status.extended_tweet['entities']
-                    except AttributeError:
+                    except (KeyError, AttributeError):
                         pass
 
         hashtags = []
@@ -87,7 +87,7 @@ class StatusProcessor():
                     entity['expanded_url'], status_id)]
                 try:
                     text = text.replace(entity['url'], entity['display_url'])
-                except AttributeError:
+                except (KeyError, AttributeError):
                     pass
 
         media = []
@@ -96,7 +96,7 @@ class StatusProcessor():
                 url = ''
                 try:
                     url = entity['media_url_https']
-                except AttributeError:
+                except (KeyError, AttributeError):
                     url = entity['media_url']
                 image_blob = None
                 try:
