@@ -11,4 +11,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.hostname == ghi
+          - node.hostname == #todo
+
+volumes:
+  repo:
