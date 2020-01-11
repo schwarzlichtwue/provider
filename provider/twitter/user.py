@@ -3,6 +3,18 @@ import urllib.request
 import logging
 
 def process_user(cursor, user):
+    """Add a twitter user to the database.
+
+    Adds a tweepy.User to the database if it does not already exist
+
+    Parameters
+    ----------
+
+    cursor : sqlite3.Cursor
+        The sqlite3 cursor sql-queries are executed on.
+    user : tweepy.User
+        The twitter user that will be added to the database.
+    """
     logging.info("Adding user @{}".format(user.screen_name))
     id = user.id
     name = user.name

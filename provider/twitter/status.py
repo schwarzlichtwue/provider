@@ -13,10 +13,19 @@ class StatusProcessor():
         self.conn = sqlite3.connect(db)
 
     def process_status(self, status):
-        """
-        Adds a given status and linked media to the database
-        Only call this method from the same thread! This is dictated
-        by the sqlite connection
+        """Add a status to the database
+
+        Adds a given status, linked media, hashtags, urls, and all referenced
+        status to the database.
+
+        Only call this method from the same thread the StatusProcessor was
+        created from! This is dictated by the sqlite3 connection.
+
+        Parameters
+        ----------
+
+        status : tweepy.Status
+            The status that is to be added to the database
         """
         logging.info("Processing status {}".format(status.id))
         cursor = self.conn.cursor()

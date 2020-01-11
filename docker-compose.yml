@@ -7,6 +7,3 @@ services:
     image: schwarzlicht-wue-content-provider:latest
     volumes:
       - ./db/:/app/db/
-
-volumes:
-  repo:

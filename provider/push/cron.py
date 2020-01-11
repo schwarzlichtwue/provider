@@ -19,6 +19,29 @@ class Cron:
 
     def __init__(self, user_id: int, db_file: str, ssh_file: str,
             update_interval: int, jekyll_source: str, jekyll_target: str):
+        """Start a scheduler which pushes jekyll changes at regular intervals
+
+        Creates a jekyll instance and registers a background (async) scheduler
+        to perform jekyll builds and git pushes at regular intervals
+
+        Parameters
+        ----------
+
+        user_id : int
+            The twitter user's id
+        db_file : str
+            The sqlite3 database
+        ssh_file : str
+            An ssh private-key file authorized to push to the git repository
+        update_interval : int
+            The update interval (in hours) by which the scheduler is configured
+        jekyll_source : str
+            The folder where jekyll source files are located at.
+            Cron performes pushes for any changes made here
+        jekyll_target : str
+            The folder where jekyll is built in.
+            Cron performes pushes for any changes made here
+        """
         self.user_id = user_id
         self.db = db_file
         self.ssh_file = ssh_file
@@ -40,9 +63,19 @@ class Cron:
         self.scheduler.start()
 
     def stop(self):
+        """Stop the cron service
+        """
         self.scheduler.shutdown()
 
     def callback(self):
+        """Callback that performs jekyll builds and git pushes
+
+        This callback is executed by the scheduler in regular intervals.  Call
+        this function directly to perform updates outside from the interval.
+        This function obtains the latest tweets, builds jekyll post entries,
+        builds a jekyll blog and pushes all changes via git.
+
+        """
         if self.calling:
             logging.warning("""Update-Callback was executed while another \
 callback is still running. Aborting""")

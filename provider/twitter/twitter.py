@@ -15,6 +15,31 @@ class Twitter:
 
     def __init__(self, user_id:str, consumer_key: str, consumer_secret:
             str, access_token: str, access_secret: str, db_file: str):
+        """Initialize the twitter module.
+
+        Opens a connection to:
+         * twitter.com via tweepy and
+         * the sqlite-database.
+
+        Adds all required tables to the sqlite-database (if not already present).
+        Prepares a status processor handling tweets.
+
+        Parameters
+        ----------
+
+        user_id : str
+            The twitter user's id
+        consumer_key : str
+            The twitter api's consumer key
+        consumer_secret : str
+            The twitter api's consumer secret
+        access_token : str
+            The twitter user's access token
+        access_secret : str
+            The twitter user's access secret
+        db_file : str
+            The sqlite database
+        """
         self.db = db_file
         self.conn = sqlite3.connect(self.db)
         self.user_id = user_id
@@ -28,6 +53,10 @@ class Twitter:
         self.stream = None
 
     def listen(self):
+        """Start listening on the user's twitter stream
+
+        Starts an async tweepy stream that follows the specified user.
+        """
         logging.info("Listening on twitter stream")
         streamProcessor = StreamProcessor()
         streamProcessor.prepare(self.db)
@@ -37,6 +66,8 @@ class Twitter:
         self.stream.filter(follow=[self.user_id], is_async=True)
 
     def stop(self):
+        """Disconnect from the tweepy stream and close the sqlite connection.
+        """
         if self.stream:
             self.stream.disconnect()
         logging.info("Closing connection to database {}".format(self.db))
@@ -46,8 +77,8 @@ class Twitter:
 
 
     def prepare_db(self):
-        """
-        prepare the database by creating all required tables if they do not exist
+        """Prepare the database by creating all required tables if they do
+        not exist.
         """
         c = self.conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS "tweets" (
@@ -88,24 +119,50 @@ PRIMARY KEY("user_id")
         self.conn.commit()
 
     def archive(self, num_tweets: int):
-        """
-        Archives past num_tweets tweets of the user
+        """Archive the latest tweets of the user.
+
+        Archives the latest 'num_tweets' tweets of the user.
+        When twitter's api-request-limiter jumps in, the static limit_handled
+        function is called.
+
+        Parameters
+        ----------
+
+        num_tweets : int
+            The number of latest tweets to archive
         """
         logging.info("Archiving {} tweets".format(num_tweets))
         for status in limit_handled(tweepy.Cursor(self.api.user_timeline, user_id = self.user_id, tweet_mode='extended').items(num_tweets)):
             self.processor.process_status(status)
 
     def add_status_to_db(self, status_id: int):
-        """
-        Adds the status identified by status_id to the database
+        """Add a specific status to the database.
+
+        Parameters
+        ----------
+
+        status_id : int
+            The id of the status that is to be added to the database
         """
         logging.info("Processing status {}".format(status_id))
         status = self.api.get_status(status_id, tweet_mode='extended')
         self.processor.process_status(status)
 
 def limit_handled(cursor):
-    """
-    Function for handling the twitter api time limits
+    """Handle the twitter api's time limits.
+
+    Example:
+    >>> for status in limit_handled(cursor.items(10)):
+
+    Parameters
+    ----------
+
+    cursor : tweepy.Cursor
+        The cursor hat is to be handled
+
+    Returns
+    -------
+    tweepy.Status
     """
     try:
         while True:

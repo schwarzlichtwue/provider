@@ -2,11 +2,9 @@
 
 try:
     from provider.twitter.twitter import Twitter
-    #import provider.facebook.facebook as facebook
     from provider.push.cron import Cron
 except ImportError:
     from twitter.twitter import Twitter
-    #import facebook.facebook as facebook
     from push.cron import Cron
 import sys
 import time
@@ -18,6 +16,13 @@ import logging
 def main():
     logging.basicConfig(level=logging.INFO)
     logging.info("Content Provider initiated")
+    # cl flags:
+    # --env MANDATORY
+    # --database MANDATORY
+    # --update-interval OPTIONAL
+    # --ssh OPTIONAL. If not specified, changes are not pushed to GitHub
+    # --jekyll-source OPTIONAL. But MANDATORY if --ssh is specified
+    # --jekyll-target OPTIONAL. But MANDATORY if --ssh is specified
     parser = argparse.ArgumentParser(description="Process new facebook-posts and tweets")
     parser.add_argument('-e', '--env', dest='env_file', type=str,
                         help="the location env variables are stored in")
@@ -43,9 +48,10 @@ def main():
     else:
         if not args.jekyll_source:
             logging.error("Missing jekyll source folder")
+            return 1
         if not args.jekyll_target:
             logging.error("Missing jekyll target folder")
-
+            return 1
 
     config = decouple.Config(decouple.RepositoryEnv(args.env_file))
     try:
@@ -73,12 +79,19 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         consumer_secret       = twitter_consumer_secret,
         access_token          = twitter_access_token,
         access_secret         = twitter_access_secret,
-        db_file               = args.db_file)
+        db_file               = args.db_file
+        )
 
     twitter.listen()
 #    twitter.add_status_to_db(1186662980643119104)
 #    twitter.archive(40)
 
+    # cron is running with the specified update interval. The tool is running
+    # inside a docker container, so how do we skip forward and perform an
+    # update outside the interval? By sending a custom command to the tools's
+    # process!
+    # Assuming the PID is 1, the following command performs a manual update:
+    # $ kill -s SIGUSR1 1
     def update_handler(signum, frame):
         logging.info("Manual Push started")
         cron.callback()
