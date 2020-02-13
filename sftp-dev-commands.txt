@@ -1,2 +1,2 @@
-put -r ../../schwarzlicht-master/* /upload/
+put -r ../../schwarzlicht-master/* /www/
 exit

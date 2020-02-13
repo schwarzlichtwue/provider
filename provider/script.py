@@ -112,6 +112,8 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         twitter         = twitter
         )
 
+    cron.callback()
+
     # cron is running with the specified update interval. The tool is running
     # inside a docker container, so how do we skip forward and perform an
     # update outside the interval? By sending a custom command to the tools's
