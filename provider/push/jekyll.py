@@ -12,7 +12,8 @@ class Jekyll(object):
             "Performing jekyll build of {}. Writing to {}".format(
             self.source_folder, self.target_folder)
             )
-        cmd = ['cd {} && jekyll build -d {}'.format(self.source_folder,
+        #cmd = ['cd {} && jekyll build -d {}'.format(self.source_folder,
+        cmd = ['cd {} && bundle exec jekyll build -d {}'.format(self.source_folder,
             self.target_folder)]
         subprocess.run(cmd, shell=True)
         logging.info("Jekyll build finished")

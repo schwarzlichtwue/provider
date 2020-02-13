@@ -6,11 +6,13 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 try:
     from provider.push.git import Git
+    from provider.push.sftp import Sftp
     from provider.push.jekyll import Jekyll
     from provider.push.refine import Refine
     import provider.push.filecreator as filecreator
 except ImportError:
     from push.git import Git
+    from push.sftp import Sftp
     from push.jekyll import Jekyll
     from push.refine import Refine
     import push.filecreator as filecreator
@@ -18,7 +20,8 @@ except ImportError:
 class Cron:
 
     def __init__(self, user_id: int, db_file: str, ssh_file: str,
-            update_interval: int, jekyll_source: str, jekyll_target: str):
+            update_interval: int, jekyll_source: str, jekyll_target: str,
+            sftp_address: str, sftp_password: str, sftp_config_file: str):
         """Start a scheduler which pushes jekyll changes at regular intervals
 
         Creates a jekyll instance and registers a background (async) scheduler
@@ -41,12 +44,25 @@ class Cron:
         jekyll_target : str
             The folder where jekyll is built in.
             Cron performes pushes for any changes made here
+        sftp_address : str
+            The address to connect to via SFTP
+        sftp_password : str
+            The password required for connecting via SFTP
+        sftp_config_file : str
+            The ssh config file for specifying the sftp connection
         """
         self.user_id = user_id
         self.db = db_file
         self.ssh_file = ssh_file
         self.jekyll_source = jekyll_source
         self.jekyll_target = jekyll_target
+
+        self.sftp = None
+        if sftp_address:
+            self.sftp = Sftp(folder = self.jekyll_target,
+                address = sftp_address,
+                password = sftp_password,
+                config_file = sftp_config_file)
 
         self.jekyll = Jekyll(self.jekyll_source, self.jekyll_target)
         self.scheduler = BackgroundScheduler()
@@ -106,6 +122,9 @@ callback is still running. Aborting""")
 
             self.jekyll.build()
             target_git.push("new tweets")
+
+            if self.sftp:
+                self.sftp.update()
 
             logging.info("Update finished. Added tweets with id < {}".format(self.min_tweet_id))
         finally:
