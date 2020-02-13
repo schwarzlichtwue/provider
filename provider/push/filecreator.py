@@ -8,7 +8,7 @@ def create(folder, obj):
         file_.write('---\n')
         file_.write('layout: post\n')
         file_.write('date: \'{}\'\n'.format(obj['date']))
-        file_.write('categories: {}\n'.format(' '.join(sorted(obj['categories']))).lower())
+        file_.write('tags: {}\n'.format(' '.join(sorted(obj['categories']))).lower())
         file_.write('ref: \'{}\'\n'.format(obj['url']))
         if 'media' in obj:
             file_.write('media: [')

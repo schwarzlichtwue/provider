@@ -41,7 +41,6 @@ class Twitter:
             The sqlite database
         """
         self.db = db_file
-        self.conn = sqlite3.connect(self.db)
         self.user_id = user_id
         self.prepare_db()
         self.processor = status_processor.StatusProcessor(self.db)
@@ -66,21 +65,17 @@ class Twitter:
         self.stream.filter(follow=[self.user_id], is_async=True)
 
     def stop(self):
-        """Disconnect from the tweepy stream and close the sqlite connection.
-        """
+        """Disconnect from the tweepy stream"""
         if self.stream:
             self.stream.disconnect()
-        logging.info("Closing connection to database {}".format(self.db))
-        self.conn.commit()
-        self.conn.close()
-        logging.info("Connection to database {} closed".format(self.db))
 
 
     def prepare_db(self):
         """Prepare the database by creating all required tables if they do
         not exist.
         """
-        c = self.conn.cursor()
+        conn = sqlite3.connect(self.db)
+        c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS "tweets" (
 "tweet_id" INTEGER UNIQUE,
 "text" TEXT,
@@ -116,9 +111,41 @@ PRIMARY KEY("user_id")
 "tweet_id" INTEGER
 );''')
         logging.info("Committing CREATE TABLE queries")
-        self.conn.commit()
+        conn.commit()
+        conn.close()
 
-    def archive(self, num_tweets: int):
+    def get_max_tweet_id(self):
+        """Return the id of the latest tweet stored in the database"""
+        conn = sqlite3.connect(self.db)
+        c = conn.cursor()
+        c.execute('SELECT MAX(tweet_id) FROM tweets;')
+        result = c.fetchone()
+        conn.close()
+        if result[0]:
+            return result[0]
+        return 0
+
+
+    def archive_later_than(self, min_tweet_id: int):
+        """Archive the latest tweets of the user.
+
+        Archives all tweets with tweet_id > 'min_tweet_id'.
+        When twitter's api-request-limiter jumps in, the static limit_handled
+        function is called.
+
+        Parameters
+        ----------
+
+        min_tweet_id : int
+            The minimal tweet id
+        """
+        logging.info("Archiving tweets with id > {}".format(min_tweet_id))
+        for status in limit_handled(tweepy.Cursor(self.api.user_timeline,
+            user_id = self.user_id, tweet_mode='extended',
+            since_id=min_tweet_id).items()):
+            self.processor.process_status(status)
+
+    def archive_latest(self, num_tweets: int):
         """Archive the latest tweets of the user.
 
         Archives the latest 'num_tweets' tweets of the user.

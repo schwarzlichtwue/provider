@@ -6,22 +6,20 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 try:
     from provider.push.git import Git
-    from provider.push.sftp import Sftp
     from provider.push.jekyll import Jekyll
     from provider.push.refine import Refine
     import provider.push.filecreator as filecreator
 except ImportError:
     from push.git import Git
-    from push.sftp import Sftp
     from push.jekyll import Jekyll
     from push.refine import Refine
     import push.filecreator as filecreator
 
 class Cron:
 
-    def __init__(self, user_id: int, db_file: str, ssh_file: str,
+    def __init__(self, user_id: int, db_file: str,
             update_interval: int, jekyll_source: str, jekyll_target: str,
-            sftp_address: str, sftp_password: str, sftp_config_file: str):
+            sftp, twitter):
         """Start a scheduler which pushes jekyll changes at regular intervals
 
         Creates a jekyll instance and registers a background (async) scheduler
@@ -34,8 +32,6 @@ class Cron:
             The twitter user's id
         db_file : str
             The sqlite3 database
-        ssh_file : str
-            An ssh private-key file authorized to push to the git repository
         update_interval : int
             The update interval (in hours) by which the scheduler is configured
         jekyll_source : str
@@ -44,26 +40,17 @@ class Cron:
         jekyll_target : str
             The folder where jekyll is built in.
             Cron performes pushes for any changes made here
-        sftp_address : str
-            The address to connect to via SFTP
-        sftp_password : str
-            The password required for connecting via SFTP
-        sftp_config_file : str
-            The ssh config file for specifying the sftp connection
+        sftp : str
+            A sftp object
+        twitter : str
+            A twitter object
         """
         self.user_id = user_id
         self.db = db_file
-        self.ssh_file = ssh_file
         self.jekyll_source = jekyll_source
         self.jekyll_target = jekyll_target
-
-        self.sftp = None
-        if sftp_address:
-            self.sftp = Sftp(folder = self.jekyll_target,
-                address = sftp_address,
-                password = sftp_password,
-                config_file = sftp_config_file)
-
+        self.twitter = twitter
+        self.sftp = sftp
         self.jekyll = Jekyll(self.jekyll_source, self.jekyll_target)
         self.scheduler = BackgroundScheduler()
 
@@ -72,8 +59,8 @@ class Cron:
         try:
             update_interval = int(update_interval)
         except ValueError:
-            logging.warning("Update interval is not an integer. Using default value.")
-            update_interval = 2 # (default)
+            logging.warning("Update interval is not specified or not an integer. Using default value.")
+            update_interval = 1 # (default)
         logging.info("Starting background update job with interval {}h".format(update_interval))
         self.scheduler.add_job(self.callback, 'interval', hours=update_interval, replace_existing=True)
         self.scheduler.start()
@@ -99,30 +86,39 @@ callback is still running. Aborting""")
         self.calling = True
         try:
             logging.info("Update started. Adding tweets with id > {}".format(self.min_tweet_id))
-            conn = sqlite3.connect(self.db)
 
-            refine = Refine(self.user_id, conn)
-            obj_list = refine.refine(self.min_tweet_id)
-
-            conn.close()
-
-            source_git = Git(self.jekyll_source, self.ssh_file)
+            # GIT -------------
+            source_git = Git(self.jekyll_source)
             source_git.checkout('dev')
             source_git.pull()
 
-            target_git = Git(self.jekyll_target, self.ssh_file)
+            target_git = Git(self.jekyll_target)
             target_git.checkout('master')
             target_git.pull()
 
+            # TWITTER ---------
+            max_tweet_id = self.twitter.get_max_tweet_id()
+            self.twitter.archive_later_than(max_tweet_id)
+            # no new tweets? dont sync!
+            if max_tweet_id == self.twitter.get_max_tweet_id() and self.min_tweet_id != 0:
+                self.calling = False
+                return
+
+            # PROCESS ---------
+            conn = sqlite3.connect(self.db)
+            refine = Refine(self.user_id, conn)
+            obj_list = refine.refine(self.min_tweet_id)
+            conn.close()
             for obj in obj_list:
                 filecreator.create(self.jekyll_source, obj)
                 self.min_tweet_id = max(self.min_tweet_id, int(obj['tweet_id']))
 
-            source_git.push("new blog posts")
-
+            # JEKYLL ----------
             self.jekyll.build()
-            target_git.push("new tweets")
 
+            # SYNC ------------
+            source_git.push("new blog posts")
+            target_git.push("new tweets")
             if self.sftp:
                 self.sftp.update()
 

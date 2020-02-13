@@ -1,10 +1,12 @@
 #!/bin/python3
 
 try:
+    from provider.push.sftp import Sftp
     from provider.twitter.twitter import Twitter
     from provider.push.cron import Cron
 except ImportError:
     from twitter.twitter import Twitter
+    from push.sftp import Sftp
     from push.cron import Cron
 import sys
 import time
@@ -19,25 +21,25 @@ def main():
     # cl flags:
     # --env MANDATORY
     # --database MANDATORY
+    # --jekyll-source MANDATORY.
+    # --jekyll-target MANDATORY.
     # --update-interval OPTIONAL
-    # --ssh OPTIONAL. If not specified, changes are not pushed to GitHub
     # --sftp-address OPTIONAL. If not specified, changes are not pushed to a SFTP server
+    # --sftp-batch OPTIONAL. But MANDATORY if --sftp-address is specified
     # --sftp-config OPTIONAL. But MANDATORY if --sftp-address is specified
-    # --jekyll-source OPTIONAL. But MANDATORY if --ssh is specified
-    # --jekyll-target OPTIONAL. But MANDATORY if --ssh is specified
     parser = argparse.ArgumentParser(description="Process new facebook-posts and tweets")
     parser.add_argument('-e', '--env', dest='env_file', type=str,
                 help="the location env variables are stored in")
     parser.add_argument('-d', '--database', dest='db_file', type=str,
                 help="The database all posts and tweets are stored in. Specify a non-existing file to save a new database there")
-    parser.add_argument('-s', '--ssh', dest='ssh_file', type=str,
-                help="The ssh key-file to use for pushing to github (needs to allow no passphrase)")
     parser.add_argument('-a', '--sftp-address', dest='sftp_address', type=str,
                 help="The sftp address")
+    parser.add_argument('-b', '--sftp-batch', dest='sftp_batch_file', type=str,
+                help="The sftp batch file to use for uploading data")
     parser.add_argument('-c', '--sftp-config', dest='sftp_config_file', type=str,
                 help="The ssh config file to use for connecting via sftp")
     parser.add_argument('-u', '--update-interval', dest='github_update_interval', type=int,
-                help="The interval (h) in which changes are to be pushed via github")
+                help="The interval (h) in which changes are to be pushed")
     parser.add_argument('--jekyll-source', dest='jekyll_source', type=str,
                 help="The path of the github repository the source changes are to be committed to")
     parser.add_argument('--jekyll-target', dest='jekyll_target', type=str,
@@ -49,18 +51,18 @@ def main():
     if not args.db_file:
         logging.error("No database file specified")
         return 1
-    if not args.ssh_file:
-        logging.warning("No ssh key file specified. Changes will not be pushed")
-    else:
-        if not args.jekyll_source:
-            logging.error("Missing jekyll source folder")
-            return 1
-        if not args.jekyll_target:
-            logging.error("Missing jekyll target folder")
-            return 1
+    if not args.jekyll_source:
+        logging.error("Missing jekyll source folder")
+        return 1
+    if not args.jekyll_target:
+        logging.error("Missing jekyll target folder")
+        return 1
     if not args.sftp_address:
         logging.warning("No SFTP address specified. Changes will not be uploaded")
     else:
+        if not args.sftp_batch_file:
+            logging.error("SFTP Address is specified, but SFTP batch file is not.")
+            return 1
         if not args.sftp_config_file:
             logging.error("SFTP Address is specified, but SSH config file is not.")
             return 1
@@ -78,23 +80,13 @@ TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET,
 TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         return 1
 
+    sftp_password = None
     if args.sftp_address:
         try:
             sftp_password = config.get('SFTP_PASSWORD')
         except UndefinedValueError:
             logging.error("{} must contain an entry for SFTP_PASSWORD".format(args.env_file))
             return 1
-
-    cron = Cron(user_id = twitter_user_id,
-        db_file         = args.db_file,
-        ssh_file        = args.ssh_file,
-        update_interval = args.github_update_interval,
-        sftp_address    = args.sftp_address,
-        sftp_password   = args.sftp_password,
-        sftp_config_file= args.sftp_config_file,
-        jekyll_source   = args.jekyll_source,
-        jekyll_target   = args.jekyll_target
-        )
 
     twitter = Twitter(user_id = twitter_user_id,
         consumer_key          = twitter_consumer_key,
@@ -104,9 +96,21 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         db_file               = args.db_file
         )
 
-    twitter.listen()
-#    twitter.add_status_to_db(1186662980643119104)
-#    twitter.archive(40)
+    sftp = Sftp(
+        address     = args.sftp_address,
+        batch_file  = args.sftp_batch_file,
+        config_file = args.sftp_config_file,
+        password    = sftp_password
+        )
+
+    cron = Cron(user_id = twitter_user_id,
+        db_file         = args.db_file,
+        update_interval = args.github_update_interval,
+        jekyll_source   = args.jekyll_source,
+        jekyll_target   = args.jekyll_target,
+        sftp            = sftp,
+        twitter         = twitter
+        )
 
     # cron is running with the specified update interval. The tool is running
     # inside a docker container, so how do we skip forward and perform an
@@ -126,7 +130,6 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
     except KeyboardInterrupt:
         logging.warning("Caught SIGINT signal. Stopping")
     finally:
-        twitter.stop()
         cron.stop()
 
 main()

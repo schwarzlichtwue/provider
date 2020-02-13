@@ -9,7 +9,7 @@ ENV GIT_SOURCE_BRANCH=dev
 ENV GIT_TARGET_BRANCH=master
 RUN mkdir $ROOT && mkdir $ROOT/db/ && mkdir $SOURCE_REPO && mkdir $TARGET_REPO
 
-RUN apk update && apk upgrade && apk add --no-cache python3 openssh git ruby-dev ruby build-base
+RUN apk update && apk upgrade && apk add --no-cache python3 openssh git ruby-dev ruby build-base sshpass tor
 RUN gem install --no-document jekyll bundler bigdecimal
 RUN if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 RUN if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi
@@ -32,4 +32,4 @@ COPY . $ROOT/
 
 RUN python3 setup.py install
 
-ENTRYPOINT ["content-provider", "-e", "/app/.env", "-s", "/app/id_rsa", "-d", "/app/db/db.sqlite3", "-u", "4", "--jekyll-source", "/source_repo", "--jekyll-target", "/target_repo"]
+ENTRYPOINT ["./entrypoint.sh"]

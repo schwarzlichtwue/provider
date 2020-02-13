@@ -4,10 +4,8 @@ import logging
 
 class Git(object):
 
-    def __init__(self, folder: str, ssh_file: str = None):
+    def __init__(self, folder: str):
         self.folder = folder
-        self.ssh_file = ssh_file
-        self.can_push = ssh_file is not None and folder is not None
 
     def checkout(self, branch: str):
         logging.info("Checking out branch {}".format(branch))
@@ -26,7 +24,6 @@ class Git(object):
         logging.info("Committing in {} with message '{}'".format(self.folder, message))
         cmd = ['git', '-C', self.folder, 'commit', '-m', message]
         subprocess.run(cmd)
-        if self.can_push:
-            logging.info("Pushing in {}".format(self.folder))
-            cmd = ['git', '-C', self.folder, 'push']
-            subprocess.run(cmd)
+        logging.info("Pushing in {}".format(self.folder))
+        cmd = ['git', '-C', self.folder, 'push']
+        subprocess.run(cmd)

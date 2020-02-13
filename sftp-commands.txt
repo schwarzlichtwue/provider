@@ -1,0 +1,2 @@
+put -r /target_repo/* /upload/
+exit
