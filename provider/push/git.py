@@ -27,3 +27,23 @@ class Git(object):
         logging.info("Pushing in {}".format(self.folder))
         cmd = ['git', '-C', self.folder, 'push']
         subprocess.run(cmd)
+
+    def get_diff(self):
+        cmd = ['git', '-C', self.folder,
+                'diff', '--name-status', 'HEAD^', 'HEAD']
+        resp = subprocess.run(cmd, capture_output=True)
+        text_response = resp.stdout.decode()
+        new      = []
+        modified = []
+        removed  = []
+        for line in text_response.split('\n'):
+            split_line = line.split('\t')
+            if len(split_line) < 2:
+                continue
+            if split_line[0] == 'D':
+                removed  += [split_line[1]]
+            elif split_line[0] == 'M':
+                modified += [split_line[1]]
+            else:
+                new      += [split_line[1]]
+        return new, modified, removed

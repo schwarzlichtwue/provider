@@ -101,6 +101,7 @@ callback is still running. Aborting""")
             self.twitter.archive_later_than(max_tweet_id)
             # no new tweets? dont sync!
             if max_tweet_id == self.twitter.get_max_tweet_id() and self.min_tweet_id != 0:
+                logging.info("No new tweets since last check. Latest tweet id: {}".format(max_tweet_id))
                 self.calling = False
                 return
 
@@ -119,8 +120,13 @@ callback is still running. Aborting""")
             # SYNC ------------
             source_git.push("new blog posts")
             target_git.push("new tweets")
+
+            # DIFFS -----------
+            new, modified, removed = target_git.get_diff()
+
+            # SYNC DIFFS ------
             if self.sftp:
-                self.sftp.update()
+                self.sftp.update(new = new, modified = modified, removed = removed)
 
             logging.info("Update finished. Added tweets with id < {}".format(self.min_tweet_id))
         finally:

@@ -25,7 +25,7 @@ def main():
     # --jekyll-target MANDATORY.
     # --update-interval OPTIONAL
     # --sftp-address OPTIONAL. If not specified, changes are not pushed to a SFTP server
-    # --sftp-batch OPTIONAL. But MANDATORY if --sftp-address is specified
+    # --sftp-remote-folder OPTIONAL. But MANDATORY if --sftp-address is specified
     # --sftp-config OPTIONAL. But MANDATORY if --sftp-address is specified
     parser = argparse.ArgumentParser(description="Process new facebook-posts and tweets")
     parser.add_argument('-e', '--env', dest='env_file', type=str,
@@ -34,8 +34,8 @@ def main():
                 help="The database all posts and tweets are stored in. Specify a non-existing file to save a new database there")
     parser.add_argument('-a', '--sftp-address', dest='sftp_address', type=str,
                 help="The sftp address")
-    parser.add_argument('-b', '--sftp-batch', dest='sftp_batch_file', type=str,
-                help="The sftp batch file to use for uploading data")
+    parser.add_argument('-r', '--sftp-remote-folder', dest='sftp_remote_folder', type=str,
+                help="The sftp remote folder to use for uploading data")
     parser.add_argument('-c', '--sftp-config', dest='sftp_config_file', type=str,
                 help="The ssh config file to use for connecting via sftp")
     parser.add_argument('-u', '--update-interval', dest='github_update_interval', type=int,
@@ -60,8 +60,8 @@ def main():
     if not args.sftp_address:
         logging.warning("No SFTP address specified. Changes will not be uploaded")
     else:
-        if not args.sftp_batch_file:
-            logging.error("SFTP Address is specified, but SFTP batch file is not.")
+        if not args.sftp_remote_folder:
+            logging.error("SFTP Address is specified, but SFTP remote folder is not.")
             return 1
         if not args.sftp_config_file:
             logging.error("SFTP Address is specified, but SSH config file is not.")
@@ -97,10 +97,11 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         )
 
     sftp = Sftp(
-        address     = args.sftp_address,
-        batch_file  = args.sftp_batch_file,
-        config_file = args.sftp_config_file,
-        password    = sftp_password
+        address       = args.sftp_address,
+        local_folder  = args.jekyll_target,
+        remote_folder = args.sftp_remote_folder,
+        config_file   = args.sftp_config_file,
+        password      = sftp_password
         )
 
     cron = Cron(user_id = twitter_user_id,
