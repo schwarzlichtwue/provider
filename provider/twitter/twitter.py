@@ -43,7 +43,6 @@ class Twitter:
         self.db = db_file
         self.user_id = user_id
         self.prepare_db()
-        self.processor = status_processor.StatusProcessor(self.db)
 
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_secret)
@@ -140,10 +139,12 @@ PRIMARY KEY("user_id")
             The minimal tweet id
         """
         logging.info("Archiving tweets with id > {}".format(min_tweet_id))
+        processor = status_processor.StatusProcessor(self.db)
         for status in limit_handled(tweepy.Cursor(self.api.user_timeline,
             user_id = self.user_id, tweet_mode='extended',
             since_id=min_tweet_id).items()):
-            self.processor.process_status(status)
+            processor.process_status(status)
+        processor.close_connection()
 
     def archive_latest(self, num_tweets: int):
         """Archive the latest tweets of the user.
@@ -159,8 +160,10 @@ PRIMARY KEY("user_id")
             The number of latest tweets to archive
         """
         logging.info("Archiving {} tweets".format(num_tweets))
+        processor = status_processor.StatusProcessor(self.db)
         for status in limit_handled(tweepy.Cursor(self.api.user_timeline, user_id = self.user_id, tweet_mode='extended').items(num_tweets)):
-            self.processor.process_status(status)
+            processor.process_status(status)
+        processor.close_connection()
 
     def add_status_to_db(self, status_id: int):
         """Add a specific status to the database.
@@ -172,8 +175,10 @@ PRIMARY KEY("user_id")
             The id of the status that is to be added to the database
         """
         logging.info("Processing status {}".format(status_id))
+        processor = status_processor.StatusProcessor(self.db)
         status = self.api.get_status(status_id, tweet_mode='extended')
-        self.processor.process_status(status)
+        processor.process_status(status)
+        processor.close_connection()
 
 def limit_handled(cursor):
     """Handle the twitter api's time limits.

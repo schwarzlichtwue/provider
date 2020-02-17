@@ -12,6 +12,9 @@ class StatusProcessor():
     def __init__(self, db):
         self.conn = sqlite3.connect(db)
 
+    def close_connection(self):
+        self.conn.close()
+
     def process_status(self, status):
         """Add a status to the database
 
