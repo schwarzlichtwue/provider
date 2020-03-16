@@ -7,8 +7,9 @@ def create(folder, obj):
     with open(path, 'w') as file_:
         file_.write('---\n')
         file_.write('layout: post\n')
+        file_.write('categories: twitter\n')
         file_.write('date: \'{}\'\n'.format(obj['date']))
-        file_.write('tags: {}\n'.format(' '.join(sorted(obj['categories']))).lower())
+        file_.write('tags: {}\n'.format(' '.join(sorted(obj['tags']))).lower())
         file_.write('ref: \'{}\'\n'.format(obj['url']))
         if 'media' in obj:
             file_.write('media: [')

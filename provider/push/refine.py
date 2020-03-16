@@ -56,7 +56,7 @@ class Refine():
             obj['tweet_id'] = tweet_id
             obj['date'] = tweet_shell.created_at
             obj['url'] = 'https://twitter.com/{}/status/'.format(tweet_shell.user_screen_name) + str(tweet_id)
-            obj['categories'] = tweet_shell.categories()
+            obj['tags'] = tweet_shell.categories()
             obj['text'] = tweet_shell.render_text()
             media_ = tweet_shell.media()
             if len(media_) > 0:
