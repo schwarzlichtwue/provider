@@ -121,12 +121,9 @@ callback is still running. Aborting""")
             source_git.push("new blog posts")
             target_git.push("new tweets")
 
-            # DIFFS -----------
-            new, modified, removed = target_git.get_diff()
-
             # SYNC DIFFS ------
             if self.sftp:
-                self.sftp.update(new = new, modified = modified, removed = removed)
+                self.sftp.update()
 
             logging.info("Update finished. Added tweets with id < {}".format(self.min_tweet_id))
         finally:

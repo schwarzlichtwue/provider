@@ -25,8 +25,8 @@ def main():
     # --jekyll-target MANDATORY.
     # --update-interval OPTIONAL
     # --sftp-address OPTIONAL. If not specified, changes are not pushed to a SFTP server
+    # --sftp-user OPTIONAL. But MANDATORY if --sftp-address is specified
     # --sftp-remote-folder OPTIONAL. But MANDATORY if --sftp-address is specified
-    # --sftp-config OPTIONAL. But MANDATORY if --sftp-address is specified
     parser = argparse.ArgumentParser(description="Process new facebook-posts and tweets")
     parser.add_argument('-e', '--env', dest='env_file', type=str,
                 help="the location env variables are stored in")
@@ -36,8 +36,8 @@ def main():
                 help="The sftp address")
     parser.add_argument('-r', '--sftp-remote-folder', dest='sftp_remote_folder', type=str,
                 help="The sftp remote folder to use for uploading data")
-    parser.add_argument('-c', '--sftp-config', dest='sftp_config_file', type=str,
-                help="The ssh config file to use for connecting via sftp")
+    parser.add_argument('-f', '--sftp-user', dest='sftp_user', type=str,
+                help="The sftp user for uploading data")
     parser.add_argument('-u', '--update-interval', dest='github_update_interval', type=int,
                 help="The interval (h) in which changes are to be pushed")
     parser.add_argument('--jekyll-source', dest='jekyll_source', type=str,
@@ -60,11 +60,11 @@ def main():
     if not args.sftp_address:
         logging.warning("No SFTP address specified. Changes will not be uploaded")
     else:
+        if not args.sftp_user:
+            logging.error("SFTP Address is specified, but SFTP user is not.")
+            return 1
         if not args.sftp_remote_folder:
             logging.error("SFTP Address is specified, but SFTP remote folder is not.")
-            return 1
-        if not args.sftp_config_file:
-            logging.error("SFTP Address is specified, but SSH config file is not.")
             return 1
 
     config = decouple.Config(decouple.RepositoryEnv(args.env_file))
@@ -98,9 +98,9 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
 
     sftp = Sftp(
         address       = args.sftp_address,
+        user          = args.sftp_user,
         local_folder  = args.jekyll_target,
         remote_folder = args.sftp_remote_folder,
-        config_file   = args.sftp_config_file,
         password      = sftp_password
         )
 
