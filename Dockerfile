@@ -10,7 +10,7 @@ ENV GIT_TARGET_BRANCH=master
 RUN mkdir $ROOT && mkdir $ROOT/db/ && mkdir $SOURCE_REPO && mkdir $TARGET_REPO
 
 RUN apk update && apk upgrade && apk add --no-cache python3 openssh git ruby-dev ruby build-base sshpass tor
-RUN gem install --no-document jekyll bundler bigdecimal
+RUN gem install --no-document jekyll bundler bigdecimal jekyll-paginate-v2
 RUN if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 RUN if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi
 
