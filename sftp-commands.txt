@@ -1,2 +1,0 @@
-put -r /target_repo/* /www/
-exit

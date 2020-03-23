@@ -122,7 +122,14 @@ class Shell:
             quoted_text = self.__quote__()
             self.text += '\n' + quoted_text + '\n'
         if len(self.replied_by_statuses) > 0:
-            self.text += '\n\n' + self.replied_by_statuses[0].render_text()
+            separator = '\n'
+            replied_text = self.replied_by_statuses[0].render_text()
+            if self.text.endswith("…"):
+                self.text = self.text.replace('…', '')
+                if replied_text.startswith("…"):
+                    replied_text = replied_text.replace('…', '')
+                separator = ' '
+            self.text += separator + replied_text
 
         return self.text
 

@@ -1,4 +1,0 @@
-Host www3.systemli.org
-    User schwarzlicht
-    StrictHostKeyChecking=no
-    DynamicForward 127.0.0.1:9050
