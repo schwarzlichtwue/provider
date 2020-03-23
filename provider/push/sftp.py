@@ -21,7 +21,7 @@ class Sftp(object):
 open {}
 user {} '{}'
 lcd {}
-mirror --reverse --continue --delete --verbose {} {}
+mirror --exclude .git/ --exclude .gitignore --reverse --only-newer --delete --verbose {} {}
 bye
 """.format(
     self.address, self.user, self.password, self.local_folder,

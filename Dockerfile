@@ -20,8 +20,7 @@ RUN pip3 install --upgrade pip
 WORKDIR $ROOT
 
 COPY ./id_rsa $ROOT/id_rsa
-RUN mkdir ~/.ssh && echo -e "Host github.com\n\tStrictHostKeyChecking
-no\n\tUser git\n\tIdentityFile $ROOT/id_rsa\n\nHost www3.systemli.org\n\tUser schwarzlicht\n\tStrictHostKeyChecking=no\n\tDynamicForward 127.0.0.1:9050" >> ~/.ssh/config
+RUN mkdir ~/.ssh && echo -e "Host github.com\n\tStrictHostKeyChecking=no\n\tUser git\n\tIdentityFile $ROOT/id_rsa\n\nHost www3.systemli.org\n\tUser schwarzlicht\n\tStrictHostKeyChecking=no\n\tDynamicForward 127.0.0.1:9050" >> ~/.ssh/config
 RUN git config --global user.email $GIT_MAIL && git config --global user.name $GIT_NAME
 RUN eval `/usr/bin/ssh-agent` && ssh-add $ROOT/id_rsa && git clone $GIT_REPO $SOURCE_REPO
 RUN cp -r $SOURCE_REPO/. $TARGET_REPO/
