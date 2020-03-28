@@ -96,13 +96,15 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         db_file               = args.db_file
         )
 
-    sftp = Sftp(
-        address       = args.sftp_address,
-        user          = args.sftp_user,
-        local_folder  = args.jekyll_target,
-        remote_folder = args.sftp_remote_folder,
-        password      = sftp_password
-        )
+    sftp = None
+    if args.sftp_address:
+        sftp = Sftp(
+            address       = args.sftp_address,
+            user          = args.sftp_user,
+            local_folder  = args.jekyll_target,
+            remote_folder = args.sftp_remote_folder,
+            password      = sftp_password
+            )
 
     cron = Cron(user_id = twitter_user_id,
         db_file         = args.db_file,
@@ -113,6 +115,7 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
         twitter         = twitter
         )
 
+    #twitter.archive_latest(600)
     cron.callback()
 
     # cron is running with the specified update interval. The tool is running

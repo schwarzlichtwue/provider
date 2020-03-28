@@ -47,7 +47,9 @@ class Refine():
     def refine(self, min_tweet_id:int=0):
         self.__prepare_shell_tree__()
         self.shell_tree = self.shell_tree.filter_by_min_tweet_id(min_tweet_id)
-        self.shell_tree = self.shell_tree.filter_by_id(self.user_id)
+        self.shell_tree = self.shell_tree.filter_by_user_id(self.user_id)
+        self.shell_tree = self.shell_tree.filter_by_root_status_user_id(self.user_id)
+        self.shell_tree = self.shell_tree.filter_by_has_root()
         self.shell_tree = self.shell_tree.filter_for_roots()
         obj_list = []
         for tweet_id in self.shell_tree:

@@ -26,6 +26,15 @@ class Shell:
 
         self.rendered = False
 
+    def status_reply_root(self):
+        """
+        Return the root status this tweet replies to. If the tweet
+        itself is a root status, return self.
+        """
+        if self.reply_to_status:
+            return self.reply_to_status.status_reply_root()
+        return self
+
     def media(self) -> list:
         return self.__media_helper__([])
 
@@ -71,11 +80,14 @@ class Shell:
 
     def __url_cleaner__(self):
         c = self.conn.cursor()
-        c.execute('SELECT DISTINCT display_url, url FROM tweet_urls WHERE tweet_id = ?;', (self.id, ))
+        c.execute('SELECT display_url, url FROM tweet_urls WHERE tweet_id = ?;', (self.id, ))
         rows = c.fetchall()
+        url_dict = {}
         for row in rows:
-            self.text = self.text.replace(row[0],
-                        '[' + row[0] + '](' + row[1] + ')'
+            url_dict[row[0]] = row[1]
+        for url in url_dict:
+            self.text = self.text.replace(url,
+                        '[' + str(url) + '](' + str(url_dict[url]) + ')'
                     )
 
     def __text_cleaner__(self):
@@ -94,13 +106,13 @@ class Shell:
         # replace * with \*
         self.text = self.text.replace('*', '\\*')
 
-        # remove those ugly t.co/urls
+        # remove ugly t.co/urls
         p = re.compile('https:\/\/t.co\/[^\s]*')
         for match in set(p.findall(self.text)):
             self.text = self.text.replace(match, '')
 
         # remove thread counters
-        p = re.compile('\[?\d+/\d+\]?')
+        p = re.compile('\s\[?\d+\/\d+\]?')
         for match in set(p.findall(self.text)):
             self.text = self.text.replace(match, '')
         self.text = self.text.replace('\n', '\n\n')

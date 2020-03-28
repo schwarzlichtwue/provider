@@ -16,11 +16,28 @@ class ShellTree(dict):
                     reply_status.replied_by_statuses += [shell_obj]
 
 
-    def filter_by_id(self, user_id: str):
+    def filter_by_user_id(self, user_id: str):
         return ShellTree(
             {k: v for k, v in self.items() if str(v.user_id) == user_id }
         )
 
+    def filter_by_has_root(self):
+        """
+        Only tweets where the parent status EXISTS (indicating the parent
+        status is from the author as well)
+        """
+        return ShellTree(
+            {k: v for k, v in self.items() if not v.reply_to_status_id or v.reply_to_status }
+        )
+
+    def filter_by_root_status_user_id(self, user_id: str):
+        """
+        Only tweets where the root status AND the parent status have the
+        user_id
+        """
+        return ShellTree(
+            {k: v for k, v in self.items() if not v.reply_to_status_id or
+                (v.reply_to_status and str(v.reply_to_status.user_id) == user_id and str(v.status_reply_root().user_id) == user_id)})
 
     def filter_for_roots(self):
         return ShellTree(
