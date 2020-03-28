@@ -2,7 +2,7 @@ import re
 
 class Shell:
 
-    cat_pattern = re.compile('(?<=\s#)\w*|(?<=^#)\w*')
+    cat_pattern = re.compile('(?<=\s#)\w+|(?<=^#)\w+')
 
     def __init__(self, conn, tweet_id: int, text: str, user_id: int,
         user_name: str, user_screen_name: str, created_at: str,
@@ -91,12 +91,19 @@ class Shell:
                     )
 
     def __text_cleaner__(self):
+        self.text += ' '
         # replace hashtags with urls:
-        p = re.compile('(?<=\s)#\w*|(?<=^)#\w*')
-        for match in set(p.findall(self.text)):
-            self.text = self.text.replace(match,
-                '[' + match + '](/t/{})'.format(match.replace('#', '').lower())
-            )
+        c = self.conn.cursor()
+        c.execute('SELECT tag_name FROM tweet_tags WHERE tweet_id = ?;', (self.id, ))
+        rows = c.fetchall()
+        tags = sorted(list(set([row[0] for row in rows])), key=len, reverse=True)
+        for tag in tags:
+            p = re.compile('(?<=\s)#' + tag + '[^\w]|(?<=^)#' + tag + '[^\w]')
+            for match in set(p.findall(self.text)):
+                self.text = self.text.replace(match,
+                    '[#' + tag + '](/t/{}) '.format(tag.lower())
+                )
+
         # replace usernames with urls:
         p = re.compile('(?<=\s)@\w*|(?<=^)@\w*')
         for match in set(p.findall(self.text)):

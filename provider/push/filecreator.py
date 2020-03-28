@@ -8,17 +8,15 @@ def create(folder, obj):
         file_.write('---\n')
         file_.write('layout: post\n')
         file_.write('categories: twitter\n')
+        file_.write('title: \'{}\'\n'.format(obj['tweet_id']))
         file_.write('date: \'{}\'\n'.format(obj['date']))
         file_.write('tags: {}\n'.format(' '.join(sorted(obj['tags']))).lower())
         file_.write('ref: \'{}\'\n'.format(obj['url']))
+        file_.write('media:\n')
         if 'media' in obj:
-            file_.write('media: [')
             for i, media in enumerate(obj['media']):
                 media_path = __store_media__(folder, media)
-                file_.write('\'{}\''.format(media_path))
-                if i+1 < len(obj['media']):
-                    file_.write(', ')
-            file_.write(']\n')
+                file_.write('    - file: \'{}\'\n'.format(media_path))
         file_.write('---\n')
         file_.write(obj['text'])
 
