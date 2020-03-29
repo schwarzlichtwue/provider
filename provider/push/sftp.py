@@ -9,7 +9,6 @@ class Sftp(object):
             user:          str,
             password:      str = None):
         self.address = address
-        self.batch_file = '/tmp/batch_file.txt'
         self.user = user
         self.local_folder = local_folder
         self.remote_folder = remote_folder

@@ -45,27 +45,28 @@ def main():
     parser.add_argument('--jekyll-target', dest='jekyll_target', type=str,
                 help="The path of the github repository the target changes are to be committed to")
     args = parser.parse_args()
+    error = False
     if not args.env_file:
         logging.error("No .env file specified")
-        return 1
+        error = True
     if not args.db_file:
         logging.error("No database file specified")
-        return 1
+        error = True
     if not args.jekyll_source:
         logging.error("Missing jekyll source folder")
-        return 1
+        error = True
     if not args.jekyll_target:
         logging.error("Missing jekyll target folder")
-        return 1
+        error = True
     if not args.sftp_address:
         logging.warning("No SFTP address specified. Changes will not be uploaded")
     else:
         if not args.sftp_user:
             logging.error("SFTP Address is specified, but SFTP user is not.")
-            return 1
+            error = True
         if not args.sftp_remote_folder:
             logging.error("SFTP Address is specified, but SFTP remote folder is not.")
-            return 1
+            error = True
 
     config = decouple.Config(decouple.RepositoryEnv(args.env_file))
     try:
@@ -78,7 +79,7 @@ def main():
         logging.error("""{} must contain values for TWITTER_USER_ID,
 TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET,
 TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
-        return 1
+        error = True
 
     sftp_password = None
     if args.sftp_address:
@@ -86,7 +87,11 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
             sftp_password = config.get('SFTP_PASSWORD')
         except UndefinedValueError:
             logging.error("{} must contain an entry for SFTP_PASSWORD".format(args.env_file))
-            return 1
+            error = True
+
+    if error:
+        logging.error("Errors present. Stopping.")
+        return 1
 
     twitter = Twitter(user_id = twitter_user_id,
         consumer_key          = twitter_consumer_key,
@@ -125,7 +130,7 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
     # Assuming the PID is 1, the following command performs a manual update:
     # $ kill -s SIGUSR1 1
     def update_handler(signum, frame):
-        logging.info("Manual Push started")
+        logging.info("Manual Sync started")
         cron.callback()
     signal.signal(signal.SIGUSR1, update_handler)
     logging.info("Update-Handler for SIGUSR1 registered")
