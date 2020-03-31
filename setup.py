@@ -11,9 +11,9 @@ def read(fname):
 setup(
     name='provider',
     version="0.0.2",
-    author='schwarzlichtwue',
+    author='schwarzlicht',
     author_email='schwarzlicht.wuerzburg@gmail.com',
-    description=('Content crawler for Twitter and Facebook'),
+    description=('Content crawler for Twitter'),
     long_description=read('readme.md'),
     license='mit',
     include_package_data=False,

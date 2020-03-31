@@ -89,12 +89,8 @@ callback is still running. Aborting""")
 
             # GIT -------------
             source_git = Git(self.jekyll_source)
-            source_git.checkout('dev')
+            source_git.checkout('master')
             source_git.pull()
-
-            target_git = Git(self.jekyll_target)
-            target_git.checkout('master')
-            target_git.pull()
 
             # TWITTER ---------
             max_tweet_id = self.twitter.get_max_tweet_id()
@@ -119,7 +115,6 @@ callback is still running. Aborting""")
 
             # SYNC ------------
             source_git.push("new blog posts")
-            target_git.push("new tweets")
 
             # SYNC DIFFS ------
             if self.sftp:
