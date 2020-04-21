@@ -1,22 +1,25 @@
 import os
+import yaml
 from datetime import datetime
 
 def create(folder, obj):
     filename = str(datetime.fromisoformat(obj['date']).date()) + '-' + str(obj['tweet_id']) + '.md'
     path = os.path.join(folder, '_posts', filename)
+    yaml_obj = {
+        'layout': 'post',
+        'categories': 'twitter',
+        'title': obj['tweet_id'],
+        'date': obj['date'],
+        'ref': obj['url']
+    }
+    if len(obj['tags']) > 0:
+        yaml_obj['tags'] = list(set([tag.lower() for tag in obj['tags']]))
+    if len(obj['media']) > 0:
+        yaml_obj['media'] = [\
+            {'file':__store_media__(folder, media)} for media in obj['media']]
     with open(path, 'w') as file_:
         file_.write('---\n')
-        file_.write('layout: post\n')
-        file_.write('categories: twitter\n')
-        file_.write('title: \'{}\'\n'.format(obj['tweet_id']))
-        file_.write('date: \'{}\'\n'.format(obj['date']))
-        file_.write('tags: {}\n'.format(' '.join(sorted(obj['tags']))).lower())
-        file_.write('ref: \'{}\'\n'.format(obj['url']))
-        file_.write('media:\n')
-        if 'media' in obj:
-            for i, media in enumerate(obj['media']):
-                media_path = __store_media__(folder, media)
-                file_.write('    - file: \'{}\'\n'.format(media_path))
+        file_.write(yaml.dump(yaml_obj))
         file_.write('---\n')
         file_.write(obj['text'])
 

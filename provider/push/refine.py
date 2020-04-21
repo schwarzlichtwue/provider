@@ -60,8 +60,6 @@ class Refine():
             obj['url'] = 'https://twitter.com/{}/status/'.format(tweet_shell.user_screen_name) + str(tweet_id)
             obj['tags'] = tweet_shell.categories()
             obj['text'] = tweet_shell.render_text()
-            media_ = tweet_shell.media()
-            if len(media_) > 0:
-                obj['media'] = media_
+            obj['media'] = tweet_shell.media()
             obj_list += [obj]
         return obj_list

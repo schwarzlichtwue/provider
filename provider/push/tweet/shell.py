@@ -26,6 +26,8 @@ class Shell:
 
         self.rendered = False
 
+        self.categories_list = []
+
     def status_reply_root(self):
         """
         Return the root status this tweet replies to. If the tweet
@@ -61,7 +63,9 @@ class Shell:
         return media_
 
     def categories(self) -> list:
-        return self.__categories_helper__([])
+        if len(self.categories_list) == 0:
+            self.categories_list = self.__categories_helper__([])
+        return self.categories_list
 
     def __categories_helper__(self, visited: list) -> list:
         if self.id in visited:
@@ -83,6 +87,8 @@ class Shell:
         c.execute('SELECT display_url, url FROM tweet_urls WHERE tweet_id = ?;', (self.id, ))
         rows = c.fetchall()
         url_dict = {}
+        # wittingly loses information: urls with the same display_url are lost.
+        # only one of them is used
         for row in rows:
             url_dict[row[0]] = row[1]
         for url in url_dict:
@@ -91,18 +97,13 @@ class Shell:
                     )
 
     def __text_cleaner__(self):
-        self.text += ' '
         # replace hashtags with urls:
-        c = self.conn.cursor()
-        c.execute('SELECT tag_name FROM tweet_tags WHERE tweet_id = ?;', (self.id, ))
-        rows = c.fetchall()
-        tags = sorted(list(set([row[0] for row in rows])), key=len, reverse=True)
-        for tag in tags:
-            p = re.compile('(?<=\s)#' + tag + '[^\w]|(?<=^)#' + tag + '[^\w]')
-            for match in set(p.findall(self.text)):
-                self.text = self.text.replace(match,
-                    '[#' + tag + '](/t/{}) '.format(tag.lower())
-                )
+        matches = self.cat_pattern.findall(self.text)
+        matches = sorted(list(set(matches)), key=len, reverse=True)
+        for match in matches:
+            self.text = self.text.replace('#' + match,
+                '[#{}](/t/{})'.format(match, match.lower())
+            )
 
         # replace usernames with urls:
         p = re.compile('(?<=\s)@\w*|(?<=^)@\w*')
@@ -110,6 +111,7 @@ class Shell:
             self.text = self.text.replace(match,
                 '[' + match + '](https://twitter.com/{})'.format(match.replace('@', ''))
             )
+
         # replace * with \*
         self.text = self.text.replace('*', '\\*')
 
@@ -124,8 +126,14 @@ class Shell:
             self.text = self.text.replace(match, '')
         self.text = self.text.replace('\n', '\n\n')
 
+        # remove the … char that indicates sentence continuation
+        if self.text.endswith("…"):
+            self.text = self.text[:-1]
+        if self.text.startswith("…"):
+            self.text = self.text[1:]
+
     def __quote__(self):
-        quote = '> <b>{} ([@{}](https://twitter.com/{})):</b>  \n'.format(self.quoting.user_name, self.quoting.user_screen_name, self.quoting.user_screen_name)
+        quote = '> <b>{}</b> ([@{}](https://twitter.com/{})):  \n'.format(self.quoting.user_name, self.quoting.user_screen_name, self.quoting.user_screen_name)
         lines = self.quoting.render_text().split('\n')
         for line in lines:
             quote += '>' + line + '  \n'
@@ -141,14 +149,13 @@ class Shell:
             quoted_text = self.__quote__()
             self.text += '\n' + quoted_text + '\n'
         if len(self.replied_by_statuses) > 0:
-            separator = '\n'
             replied_text = self.replied_by_statuses[0].render_text()
-            if self.text.endswith("…"):
-                self.text = self.text.replace('…', '')
-                if replied_text.startswith("…"):
-                    replied_text = replied_text.replace('…', '')
-                separator = ' '
-            self.text += separator + replied_text
+            if len(replied_text) > 0:
+                separator = '\n'
+                if replied_text[0].islower():
+                    separator = ' '
+                self.text += separator + replied_text
+            # else: maybe the replied tweet only contains media
 
         return self.text
 

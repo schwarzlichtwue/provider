@@ -12,7 +12,7 @@ setup(
     name='provider',
     version="0.0.2",
     author='schwarzlicht',
-    author_email='schwarzlicht.wuerzburg@gmail.com',
+    author_email='schwarzlicht@riseup.net',
     description=('Content crawler for Twitter'),
     long_description=read('readme.md'),
     license='mit',
