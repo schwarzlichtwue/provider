@@ -21,5 +21,6 @@ setup(
     entry_points={'console_scripts': [
         'content-provider=provider.script:main',
     ]},
-    install_requires=['argparse', 'tweepy', 'python-decouple', 'apscheduler'],
+    install_requires=['argparse', 'tweepy', 'python-decouple', 'apscheduler',
+    'pyyml'],
 )
