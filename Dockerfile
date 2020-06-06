@@ -13,6 +13,7 @@ RUN gem install --no-document jekyll bundler bigdecimal jekyll-paginate-v2 jekyl
 RUN if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 RUN if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi
 
+RUN apk update && apk upgrade && apk add --no-cache py3-pip
 RUN pip3 install --upgrade pip
 
 
