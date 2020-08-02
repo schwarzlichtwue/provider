@@ -11,4 +11,4 @@ This is a python application that archives tweets of a defined twitter account.
 The application is deployed via docker. All tweets are added to an __sqlite__
 database and, in regular intervals, transformed to jekyll posts. New posts are
 pushed to a git repository hosted by github.com and to another hoster via sftp.
-All synching/pushing is done via __TOR__.
+All syncing/pushing is done via __TOR__.

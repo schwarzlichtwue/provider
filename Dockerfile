@@ -2,7 +2,7 @@ FROM alpine
 ENV SOURCE_REPO=/source_repo
 ENV TARGET_REPO=/target_repo
 ENV ROOT=/app
-ENV GIT_MAIL=schwarzlicht.wuerzburg@gmail.com
+ENV GIT_MAIL=schwarzlicht@riseup.net
 ENV GIT_NAME=schwarzlichtwue
 ENV GIT_REPO=git@github.com:schwarzlichtwue/schwarzlicht.org.git
 ENV GIT_SOURCE_BRANCH=master
@@ -23,7 +23,7 @@ COPY ./id_rsa $ROOT/id_rsa
 RUN mkdir ~/.ssh && echo -e "Host github.com\n\tStrictHostKeyChecking=no\n\tUser git\n\tIdentityFile $ROOT/id_rsa\n\nHost www3.systemli.org\n\tUser schwarzlicht\n\tStrictHostKeyChecking=no\n\tDynamicForward 127.0.0.1:9050" >> ~/.ssh/config
 RUN git config --global user.email $GIT_MAIL && git config --global user.name $GIT_NAME
 RUN eval `/usr/bin/ssh-agent` && ssh-add $ROOT/id_rsa && git clone $GIT_REPO $SOURCE_REPO
-RUN cd $SOURCE_REPO && git checkout $GIT_SOURCE_BRANCH && bundle install && cd $ROOT
+RUN cd $SOURCE_REPO && git checkout $GIT_SOURCE_BRANCH && bundle install && bundle update && cd $ROOT
 
 COPY . $ROOT/
 
