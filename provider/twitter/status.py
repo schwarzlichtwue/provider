@@ -44,8 +44,8 @@ class StatusProcessor():
         reply_to_user    = status.in_reply_to_user_id
         quoted_status_id = None
         if status.is_quote_status:
-            quoted_status_id = status.quoted_status_id
             try:
+                quoted_status_id = status.quoted_status_id
                 self.process_status(status.quoted_status)
             except (KeyError, AttributeError):
                 pass
