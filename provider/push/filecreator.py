@@ -10,6 +10,7 @@ def create(folder, obj):
         'categories': 'twitter',
         'title': obj['tweet_id'],
         'date': obj['date'],
+        'teaser': obj['teaser'],
         'ref': obj['url']
     }
     if len(obj['tags']) > 0:

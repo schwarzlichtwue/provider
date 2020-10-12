@@ -10,7 +10,8 @@ class Shell:
         self.conn = conn
         self.id = tweet_id
         self.text = text
-        self.original_text = (text + '.')[:-1]
+        self.original_text = text
+        self.teaser_text = text
         self.user_id = user_id
         self.user_name = user_name
         self.user_screen_name = user_screen_name
@@ -25,6 +26,7 @@ class Shell:
         self.quoted_by_statuses = []
 
         self.rendered = False
+        self.rendered_teaser = False
 
         self.categories_list = []
 
@@ -64,25 +66,25 @@ class Shell:
 
     def categories(self) -> list:
         if len(self.categories_list) == 0:
-            self.categories_list = self.__categories_helper__([])
+            self.categories_list = self.__categories_helper__([], self.text)
         return self.categories_list
 
-    def __categories_helper__(self, visited: list) -> list:
+    def __categories_helper__(self, visited: list, text) -> list:
         if self.id in visited:
             return []
         else:
             visited += [self.id]
-        cats = self.cat_pattern.findall(self.text)
+        cats = self.cat_pattern.findall(text)
         for i,_ in enumerate(cats):
             cats[i] = cats[i].replace(' ', '')
 
         for tweet_shell in self.replied_by_statuses:
-            cats += tweet_shell.__categories_helper__(visited)
+            cats += tweet_shell.__categories_helper__(visited, text)
         if self.quoting:
-            cats += self.quoting.__categories_helper__(visited)
+            cats += self.quoting.__categories_helper__(visited, text)
         return list(set(cats))
 
-    def __url_cleaner__(self):
+    def __url_cleaner__(self, text):
         c = self.conn.cursor()
         c.execute('SELECT display_url, url FROM tweet_urls WHERE tweet_id = ?;', (self.id, ))
         rows = c.fetchall()
@@ -92,45 +94,47 @@ class Shell:
         for row in rows:
             url_dict[row[0]] = row[1]
         for url in url_dict:
-            self.text = self.text.replace(url,
+            text = text.replace(url,
                         '[' + str(url) + '](' + str(url_dict[url]) + ')'
                     )
+        return text
 
-    def __text_cleaner__(self):
+    def __text_cleaner__(self, text):
         # replace hashtags with urls:
-        matches = self.cat_pattern.findall(self.text)
+        matches = self.cat_pattern.findall(text)
         matches = sorted(list(set(matches)), key=len, reverse=True)
         for match in matches:
-            self.text = self.text.replace('#' + match,
+            text = text.replace('#' + match,
                 '[#{}](/t/{})'.format(match, match.lower())
             )
 
         # replace usernames with urls:
         p = re.compile('(?<=\s)@\w*|(?<=^)@\w*')
-        for match in set(p.findall(self.text)):
-            self.text = self.text.replace(match,
+        for match in set(p.findall(text)):
+            text = text.replace(match,
                 '[' + match + '](https://twitter.com/{})'.format(match.replace('@', ''))
             )
 
         # replace * with \*
-        self.text = self.text.replace('*', '\\*')
+        text = text.replace('*', '\\*')
 
         # remove ugly t.co/urls
         p = re.compile('https:\/\/t.co\/[^\s]*')
-        for match in set(p.findall(self.text)):
-            self.text = self.text.replace(match, '')
+        for match in set(p.findall(text)):
+            text = text.replace(match, '')
 
         # remove thread counters
         p = re.compile('\s\[?\d+\/\d+\]?')
-        for match in set(p.findall(self.text)):
-            self.text = self.text.replace(match, '')
-        self.text = self.text.replace('\n', '\n\n')
+        for match in set(p.findall(text)):
+            text = text.replace(match, '')
+        text = text.replace('\n', '\n\n')
 
         # remove the … char that indicates sentence continuation
-        if self.text.endswith("…"):
-            self.text = self.text[:-1]
-        if self.text.startswith("…"):
-            self.text = self.text[1:]
+        if text.endswith("…"):
+            text = text[:-1]
+        if text.startswith("…"):
+            text = text[1:]
+        return text
 
     def __quote__(self):
         quote = '> <b>{}</b> ([@{}](https://twitter.com/{})):  \n'.format(self.quoting.user_name, self.quoting.user_screen_name, self.quoting.user_screen_name)
@@ -139,12 +143,19 @@ class Shell:
             quote += '>' + line + '  \n'
         return quote
 
+    def render_teaser(self):
+        if self.rendered_teaser:
+            return self.teaser_text
+        self.teaser_text = self.__url_cleaner__(self.teaser_text)
+        self.teaser_text = self.__text_cleaner__(self.teaser_text)
+        return self.teaser_text
+
     def render_text(self):
         if self.rendered:
             return self.text
         self.rendered = True
-        self.__url_cleaner__()
-        self.__text_cleaner__()
+        self.text = self.__url_cleaner__(self.text)
+        self.text = self.__text_cleaner__(self.text)
         if self.quoting:
             quoted_text = self.__quote__()
             self.text += '\n' + quoted_text + '\n'
