@@ -70,7 +70,7 @@ class Cron:
         """
         self.scheduler.shutdown()
 
-    def callback(self):
+    def callback(self, full_update=False):
         """Callback that performs jekyll builds and git pushes
 
         This callback is executed by the scheduler in regular intervals.  Call
@@ -111,7 +111,7 @@ callback is still running. Aborting""")
                 self.min_tweet_id = max(self.min_tweet_id, int(obj['tweet_id']))
 
             # JEKYLL ----------
-            self.jekyll.build()
+            self.jekyll.build(full_update)
 
             # SYNC ------------
             source_git.push("new blog posts")

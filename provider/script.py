@@ -132,7 +132,11 @@ TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_SECRET""".format(args.env_file))
     def update_handler(signum, frame):
         logging.info("Manual Sync started")
         cron.callback()
+    def full_update_handler(signum, frame):
+        logging.info("Manual Full Sync started")
+        cron.callback(full_update=True)
     signal.signal(signal.SIGUSR1, update_handler)
+    signal.signal(signal.SIGUSR2, full_update_handler)
     logging.info("Update-Handler for SIGUSR1 registered")
 
     try:
