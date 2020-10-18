@@ -1,4 +1,4 @@
-FROM debian
+FROM alpine
 ENV SOURCE_REPO=/source_repo
 ENV TARGET_REPO=/target_repo
 ENV ROOT=/app
@@ -6,14 +6,14 @@ ENV GIT_MAIL=schwarzlicht@riseup.net
 ENV GIT_NAME=schwarzlichtwue
 ENV GIT_REPO=git@github.com:schwarzlichtwue/schwarzlicht.org.git
 ENV GIT_SOURCE_BRANCH=master
-ENV DEBIAN_FRONTEND=noninteractive
 RUN mkdir $ROOT && mkdir $ROOT/db/ && mkdir $SOURCE_REPO && mkdir $TARGET_REPO
 
-RUN apt update && apt upgrade && apt install -y python3 python3-dev git ruby-dev ruby sshpass lftp tor nodejs build-essential python3-pip
+RUN apk update && apk upgrade && apk add --no-cache python3 python3-dev openssh git ruby-dev ruby build-base sshpass lftp tor nodejs
 RUN gem install --no-document jekyll bundler bigdecimal jekyll-paginate-v2 jekyll-minifier
 RUN if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
 RUN if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi
 
+RUN apk update && apk upgrade && apk add --no-cache py3-pip
 RUN pip3 install --upgrade pip
 RUN pip3 install --upgrade setuptools
 
@@ -21,7 +21,7 @@ RUN pip3 install --upgrade setuptools
 WORKDIR $ROOT
 
 COPY ./id_rsa $ROOT/id_rsa
-RUN mkdir ~/.ssh && echo "Host github.com\n\tStrictHostKeyChecking=no\n\tUser git\n\tIdentityFile $ROOT/id_rsa\n\nHost www3.systemli.org\n\tUser schwarzlicht\n\tStrictHostKeyChecking=no\n\tDynamicForward 127.0.0.1:9050" > ~/.ssh/config
+RUN mkdir ~/.ssh && echo -e "Host github.com\n\tStrictHostKeyChecking=no\n\tUser git\n\tIdentityFile $ROOT/id_rsa\n\nHost www3.systemli.org\n\tUser schwarzlicht\n\tStrictHostKeyChecking=no\n\tDynamicForward 127.0.0.1:9050" >> ~/.ssh/config
 RUN git config --global user.email $GIT_MAIL && git config --global user.name $GIT_NAME
 RUN eval `/usr/bin/ssh-agent` && ssh-add $ROOT/id_rsa && git clone $GIT_REPO $SOURCE_REPO
 RUN cd $SOURCE_REPO && git checkout $GIT_SOURCE_BRANCH && bundle install && bundle update && cd $ROOT

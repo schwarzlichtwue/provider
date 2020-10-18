@@ -52,7 +52,7 @@ class Cron:
         self.twitter = twitter
         self.sftp = sftp
         self.jekyll = Jekyll(self.jekyll_source, self.jekyll_target)
-        self.scheduler = BackgroundScheduler()
+        self.scheduler = BackgroundScheduler(timezone="Europe/Berlin")
 
         self.min_tweet_id = 0 # keep at 0 to have ALL tweets processed on startup
         self.calling = False

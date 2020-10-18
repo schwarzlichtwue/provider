@@ -2,7 +2,8 @@ import os
 import sys
 from pathlib import Path
 
-from setuptools import find_packages, setup
+from setuptools import find_packages
+from distutils.core import setup
 
 def read(fname):
     with open(os.path.join(os.path.dirname(__file__), fname)) as f:
